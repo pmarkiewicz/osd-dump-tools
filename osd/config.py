@@ -54,7 +54,7 @@ class Config:
         ('font', str), ('hd', bool), ('fakehd', bool), ('bitrate', int),
         ('nolinks', bool), ('testrun', bool), ('testframe', int), ('hq', bool),
         ('hide_gps', bool), ('hide_alt', bool), ('hide_dist', bool), ('verbatim', bool), 
-        ('singlecore', bool), ('ardu', bool), ('height', int), ('narrow', bool),
+        ('singlecore', bool), ('ardu', bool), ('out_resolution', str), ('narrow', bool),
     )
 
     def __init__(self, cfg: ConfigParser):
@@ -74,7 +74,7 @@ class Config:
         self.verbatim: bool = False
         self.singlecore: bool = False
         self.ardu: bool = False
-        self.height: int
+        self.out_resolution: str
         self.narrow: bool = False
 
         self.exclude_area = MultiExcludedAreas()
@@ -116,6 +116,15 @@ class Config:
         self.exclude_area.merge(args.ignore_area)
 
     def calculate(self):
+        out_resolution = self.out_resolution.lower()
+
+        if out_resolution == 'hd':
+            self.height = 720
+        elif out_resolution == 'fhd':
+            self.height = 1080
+        else:
+            self.hight = 1440
+
         if self.narrow:
             self.width = (self.height * 4) // 3
         else:

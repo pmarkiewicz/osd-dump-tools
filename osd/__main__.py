@@ -67,7 +67,7 @@ def build_cmd_line_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--height", type=int, default="1080", choices=[720, 1080, 1440], help="output resolution in lines, can be 720, 1080, 1440"
+        "--out_resolution", type=str, default='hd', choices=['hd', 'fhd', '2k'], help="output resolution hd is 720 lines, fhd is 1080, 2k is 1440, default is fhd"
     )
 
     parser.add_argument(

@@ -73,7 +73,7 @@ $ python -m osd --help
     --verbatim    display detailed information
     --singlecore  run on single procesor core (slow)
     --ardu        necessary to hide gps/alt/dist for ArduPilot
-    --height [720, 1080, 1440]  output video resolution, default is 1080
+    --out_resolution [hd, fhd, 2k]  output resolution hd is 720 lines, fhd is 1080, 2k is 1440, default is fhd
     
 
 # Config file
