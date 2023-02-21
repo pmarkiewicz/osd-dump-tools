@@ -15,7 +15,7 @@ INTERNAL_W_H_DJI = (60, 22)
 INTERNAL_W_H_WS = (53, 20)
 
 
-def _get_display_dims(cfg: Config, osd_type: int) -> tuple[int, int]:
+def _get_display_dims(cfg: Config) -> tuple[int, int]:
     if cfg.fakehd:
         return (60, 22)
 
@@ -63,8 +63,8 @@ def hide_items(img: Image, font: Font, exclusions, masking_tile, tile_width, til
 def draw_frame(font: Font, frame: Frame, cfg: Config, osd_type, exclusions) -> Image.Image:
     if osd_type == OSD_TYPE_DJI:
         internal_width, internal_height = INTERNAL_W_H_DJI
+        display_width, display_height = _get_display_dims(cfg)
         char_reader = lambda x, y: frame.data[y + x * internal_height]
-        display_width, display_height = _get_display_dims(cfg, osd_type)
 
     else:
         internal_width, internal_height = INTERNAL_W_H_WS

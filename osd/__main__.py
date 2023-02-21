@@ -10,6 +10,8 @@ import sys
 import tempfile
 import time
 import subprocess
+import platform
+from collections import namedtuple
 from configparser import ConfigParser
 
 import ffmpeg
@@ -67,7 +69,7 @@ def build_cmd_line_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--out_resolution", type=str, default='hd', choices=['hd', 'fhd', '2k'], help="output resolution hd is 720 lines, fhd is 1080, 2k is 1440, default is fhd"
+        "--out_resolution", type=str, default='fhd', choices=['hd', 'fhd', '2k'], help="output resolution hd is 720 lines, fhd is 1080, 2k is 1440, default is fhd"
     )
 
     parser.add_argument(
@@ -264,14 +266,25 @@ def render_frames(frames: list[Frame], font: Font, tmp_dir: str, cfg: Config, os
             pass
 
 
-def find_codec():
+def find_codec() -> str | None:    
     # code borrowed from ws-osd
+    #     
+    CodecDef = namedtuple('CodecDev', 'codec os')
 
-    # list of codes, not all are avalilable on all OS
-    # supported os       mac           w/l          w            l            w/l         w            l            m/w/l
-    codecs = ['h264_videotoolbox', 'h264_nvenc', 'h264_amf', 'h264_vaapi', 'h264_qsv', 'h264_mf', 'h264_v4l2m2m', 'libx264']
+    codecs = [CodecDef('h264_videotoolbox', ('darwin')), 
+              CodecDef('h264_nvenc', ('windows', 'linux')), 
+              CodecDef('h264_amf', ('windows')),
+              CodecDef('h264_vaapi', ('linux')), 
+              CodecDef('h264_qsv', ('windows', 'linux')),
+              CodecDef('h264_mf', ('windows')),
+              CodecDef('h264_v4l2m2m', ('linux')), 
+              CodecDef('libx264', ('darwin', 'windows', 'linux')),
+            ]
+
     cmd_line = 'ffmpeg -y -hwaccel auto -f lavfi -i nullsrc -c:v {0} -frames:v 1 -f null -'
-    for codec in codecs:
+
+    os = platform.system().lower()
+    for codec in (codec.codec for codec in codecs if os in codec.os):
         cmd = (cmd_line.format(codec)).split(" ")
         ret = subprocess.run(cmd, 
             stdout=subprocess.DEVNULL,
@@ -281,9 +294,9 @@ def find_codec():
             return codec
 
     return None
-    
 
-def run_ffmpeg(start_number: int, cfg: Config, image_dir: str, video_path: pathlib.Path, out_path: pathlib.Path):
+
+def run_ffmpeg(start_number: int, cfg: Config, image_dir: str, video_path: pathlib.Path, out_path: pathlib.Path) -> None:
     codec = find_codec()
     if not codec:
         print('No ffmpeg codec found')
