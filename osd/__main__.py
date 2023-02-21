@@ -9,9 +9,6 @@ import struct
 import sys
 import tempfile
 import time
-import subprocess
-import platform
-from collections import namedtuple
 from configparser import ConfigParser
 
 import ffmpeg
@@ -23,6 +20,7 @@ from .frame import Frame
 from .font import Font
 from .const import CONFIG_FILE_NAME, OSD_TYPE_DJI, OSD_TYPE_WS, FW_ARDU, FW_INAV, FW_BETAFL, FW_UNKNOWN
 from .config import Config, ExcludeArea
+from .utils.codecs import find_codec
 
 
 MIN_START_FRAME_NO: int = 20
@@ -264,36 +262,6 @@ def render_frames(frames: list[Frame], font: Font, tmp_dir: str, cfg: Config, os
 
         for _ in queue:
             pass
-
-
-def find_codec() -> str | None:    
-    # code borrowed from ws-osd
-    #     
-    CodecDef = namedtuple('CodecDev', 'codec os')
-
-    codecs = [CodecDef('h264_videotoolbox', ('darwin')), 
-              CodecDef('h264_nvenc', ('windows', 'linux')), 
-              CodecDef('h264_amf', ('windows')),
-              CodecDef('h264_vaapi', ('linux')), 
-              CodecDef('h264_qsv', ('windows', 'linux')),
-              CodecDef('h264_mf', ('windows')),
-              CodecDef('h264_v4l2m2m', ('linux')), 
-              CodecDef('libx264', ('darwin', 'windows', 'linux')),
-            ]
-
-    cmd_line = 'ffmpeg -y -hwaccel auto -f lavfi -i nullsrc -c:v {0} -frames:v 1 -f null -'
-
-    os = platform.system().lower()
-    for codec in (codec.codec for codec in codecs if os in codec.os):
-        cmd = (cmd_line.format(codec)).split(" ")
-        ret = subprocess.run(cmd, 
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL)
-
-        if ret.returncode == 0:
-            return codec
-
-    return None
 
 
 def run_ffmpeg(start_number: int, cfg: Config, image_dir: str, video_path: pathlib.Path, out_path: pathlib.Path) -> None:
