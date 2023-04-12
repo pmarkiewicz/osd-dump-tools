@@ -68,11 +68,10 @@ $ python -m osd --help
     --hide_gps    automatically hides gps coordinates from video
     --hide_alt    automatically hides altitude
     --hide_dist   automatically hides distance from home
-    --testrun     create overlay image with osd data in video location. Use to check ignore_area regions, regions are filled with X
-    --testframe   in case default frame doesn't have proper osd have (i.e. flight summary) for testrun select osd frame no to be used for testrun
     --verbatim    display detailed information
     --singlecore  run on single procesor core (slow)
     --ardu        necessary to hide gps/alt/dist for ArduPilot
+    --ardu-legacy use legacy resolution 50x18 for ArduPilot
     --out_resolution [hd, fhd, 2k]  output resolution hd is 720 lines, fhd is 1080, 2k is 1440, default is fhd
     
 

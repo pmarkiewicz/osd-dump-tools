@@ -53,8 +53,9 @@ class Config:
     params: tuple[tuple[str, type]] = (
         ('font', str), ('hd', bool), ('fakehd', bool), ('bitrate', int),
         ('nolinks', bool), ('testrun', bool), ('testframe', int), ('hq', bool),
-        ('hide_gps', bool), ('hide_alt', bool), ('hide_dist', bool), ('verbatim', bool), 
-        ('singlecore', bool), ('ardu', bool), ('out_resolution', str), ('narrow', bool),
+        ('hide_gps', bool), ('hide_alt', bool), ('hide_dist', bool), ('verbatim', bool),
+        ('singlecore', bool), ('ardu', bool), ('ardu_legacy', bool), 
+        ('out_resolution', str), ('narrow', bool),
     )
 
     def __init__(self, cfg: ConfigParser):
@@ -74,6 +75,7 @@ class Config:
         self.verbatim: bool = False
         self.singlecore: bool = False
         self.ardu: bool = False
+        self.ardu_legacy: bool = False
         self.out_resolution: str
         self.narrow: bool = False
 
@@ -111,6 +113,10 @@ class Config:
 
         # this is special case
         self.video = args.video
+
+        # and another special case
+        if self.ardu_legacy:
+            self.ardu = True
 
         # merge regions
         self.exclude_area.merge(args.ignore_area)

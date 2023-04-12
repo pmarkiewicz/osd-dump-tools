@@ -32,7 +32,9 @@ class HiddenItemsCache():
     alt: tuple[int, int] | None = None
     dist: tuple[int, int] | None = None
 
-_items_cache = HiddenItemsCache() 
+
+_items_cache = HiddenItemsCache()
+
 
 def hide_items(img: Image, font: Font, exclusions, masking_tile, tile_width, tile_height) -> None:
     if _items_cache.gps_lat:

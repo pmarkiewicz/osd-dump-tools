@@ -111,7 +111,11 @@ def build_cmd_line_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--ardu", action="store_true", default=None, help="Hide gps/alt for ArduPilot"
+        "--ardu", action="store_true", default=None, help="Hide gps/alt/distance for ArduPilot"
+    )
+
+    parser.add_argument(
+        "--ardu-legacy", action="store_true", default=None, help="Use legacy resolution 50x18 for ArduPilot"
     )
 
     hdivity = parser.add_mutually_exclusive_group()
@@ -327,7 +331,10 @@ def main(args: Config):
     print(f"verbatim:  {args.verbatim}")
     print(f"loading OSD dump from:  {osd_path}")
 
-    osd_type, _ = detect_system(osd_path)
+    osd_type, firmware = detect_system(osd_path)
+
+    if firmware == FW_ARDU:
+        args.ardu = True
 
     if osd_type == OSD_TYPE_DJI:
         frames = read_dji_osd_frames(osd_path, args.verbatim)
