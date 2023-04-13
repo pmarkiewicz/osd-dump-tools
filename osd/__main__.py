@@ -254,7 +254,6 @@ def render_frames(frames: list[Frame], font: Font, tmp_dir: str, cfg: Config, os
         if frames[i].next_idx != frames[i+1].idx:
             print(f'incorrect frame {frames[i].next_idx}')
 
-
     if cfg.singlecore:
         for frame in tqdm(frames):
             renderer(frame)
