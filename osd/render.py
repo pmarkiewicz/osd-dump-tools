@@ -16,13 +16,18 @@ INTERNAL_W_H_WS = (53, 20)
 
 
 def _get_display_dims(cfg: Config) -> tuple[int, int]:
-    if cfg.fakehd:
-        return (60, 22)
-
-    if cfg.hd:
+    if cfg.ardu_legacy:
         return (50, 18)
 
-    return (30, 15)
+    return (60, 22)
+
+    # if cfg.fakehd:
+    #     return (60, 22)
+
+    # if cfg.hd:
+    #     return (50, 18)
+
+    # return (30, 15)
 
 
 @dataclass

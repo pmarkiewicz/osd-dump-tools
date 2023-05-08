@@ -133,6 +133,7 @@ def build_cmd_line_parser() -> argparse.ArgumentParser:
 
     return parser
 
+
 def get_min_frame_idx(frames: list[Frame]) -> int:
     # frames idxes are in increasing order for most of time :)
 
