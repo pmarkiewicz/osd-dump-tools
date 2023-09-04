@@ -1,7 +1,7 @@
-import os
 import subprocess
 import platform
 from collections import namedtuple
+
 
 def find_codec() -> str | None:    
     # code borrowed from ws-osd
@@ -24,8 +24,8 @@ def find_codec() -> str | None:
     for codec in (codec.codec for codec in codecs if os in codec.os):
         cmd = (cmd_line.format(codec)).split(" ")
         ret = subprocess.run(cmd, 
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL)
+                             stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL)
 
         if ret.returncode == 0:
             return codec
