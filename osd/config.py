@@ -129,7 +129,7 @@ class Config:
         elif out_resolution == 'fhd':
             self.height = 1080
         else:
-            self.hight = 1440
+            self.height = 1440
 
         if self.narrow:
             self.width = (self.height * 4) // 3
