@@ -25,10 +25,6 @@ def build_cmd_line_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--nolinks", action="store_true", default=None, help="Copy frames instead of linking (windows without priviledged shell)"
-    )
-
-    parser.add_argument(
         "--hq", action="store_true", default=None, help="render with high quality profile (slower)"
     )
 
@@ -54,10 +50,6 @@ def build_cmd_line_parser() -> argparse.ArgumentParser:
 
     parser.add_argument(
         "--verbatim", action="store_true", default=None, help="Display detailed information"
-    )
-
-    parser.add_argument(
-        "--singlecore", action="store_true", default=None, help="Run on single procesor core (slow)"
     )
 
     parser.add_argument(
