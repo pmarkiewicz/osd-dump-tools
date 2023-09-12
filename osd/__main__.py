@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from functools import partial
 from multiprocessing import Pool
-import argparse
 import os
 import pathlib
 import struct
@@ -10,18 +8,23 @@ import sys
 import tempfile
 import time
 from configparser import ConfigParser
+from subprocess import Popen
+import re
 
+import pysrt
 import ffmpeg
-
 from tqdm import tqdm
 
-from .render import render_test_frame, render_single_frame
-from .frame import Frame
+from .render import DjiRenderer, WsRenderer
+from .frame import Frame, SrtFrame
 from .font import Font
 from .const import CONFIG_FILE_NAME, OSD_TYPE_DJI, OSD_TYPE_WS, FW_ARDU, FW_INAV, FW_BETAFL, FW_UNKNOWN
-from .config import Config, ExcludeArea
+from .config import Config
 from .utils.codecs import find_codec
-
+from .utils.find_slot import find_slots
+from .utils.fps import get_fps
+from .utils.time_to_ms import time_to_milliseconds
+from .cmd_line import build_cmd_line_parser
 
 MIN_START_FRAME_NO: int = 20
 WS_VIDEO_FPS = 60
@@ -52,87 +55,6 @@ frame_header_struct_dji = struct.Struct("<II")
 # I unsigned int
 # I unsigned int
 
-def build_cmd_line_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("video", type=str, help="video file e.g. DJIG0007.mp4")
-    parser.add_argument(
-        "--font", type=str, default=None, help='font basename e.g. "font"'
-    )
-    parser.add_argument(
-        "--bitrate", type=int, default=None, help='output bitrate'
-    )
-    parser.add_argument(
-        "--ignore_area", type=ExcludeArea, nargs='*', default="-1, -1, 0, 0", help="don't display area (in fonts, x1,y1,x2,y2), i.e. 10,10,15,15, can be repeated"
-    )
-
-    parser.add_argument(
-        "--out_resolution", type=str, default='fhd', choices=['hd', 'fhd', '2k'], help="output resolution hd is 720 lines, fhd is 1080, 2k is 1440, default is fhd"
-    )
-
-    parser.add_argument(
-        "--narrow", action="store_true", default=None, help="use 4:3 proportions instead of default 16:9"
-    )
-
-    parser.add_argument(
-        "--nolinks", action="store_true", default=None, help="Copy frames instead of linking (windows without priviledged shell)"
-    )
-
-    parser.add_argument(
-        "--hq", action="store_true", default=None, help="render with high quality profile (slower)"
-    )
-
-    parser.add_argument(
-        "--hide_gps", action="store_true", default=None, help="Don't render GPS coords."
-    )
-
-    parser.add_argument(
-        "--hide_alt", action="store_true", default=None, help="Don't render altitude."
-    )
-
-    parser.add_argument(
-        "--hide_dist", action="store_true", default=None, help="Don't render distance from home."
-    )
-
-    parser.add_argument(
-        "--testrun", action="store_true", default=False, help="Create overlay with osd data in video location and ends"
-    )
-
-    parser.add_argument(
-        "--testframe", type=int, default=-1, help="Osd data frame for testrun"
-    )
-
-    parser.add_argument(
-        "--verbatim", action="store_true", default=None, help="Display detailed information"
-    )
-
-    parser.add_argument(
-        "--singlecore", action="store_true", default=None, help="Run on single procesor core (slow)"
-    )
-
-    parser.add_argument(
-        "--ardu", action="store_true", default=None, help="Hide gps/alt/distance for ArduPilot"
-    )
-
-    parser.add_argument(
-        "--ardu-legacy", action="store_true", default=None, help="Use legacy resolution 50x18 for ArduPilot"
-    )
-
-    hdivity = parser.add_mutually_exclusive_group()
-    hdivity.add_argument(
-        "--hd", action="store_true", default=None, help="is this an HD OSD recording?"
-    )
-
-    hdivity.add_argument(
-        "--fakehd",
-        "--fullhd",
-        action="store_true",
-        default=None,
-        help="are you using full-hd or fake-hd in this recording?",
-    )
-
-    return parser
-
 
 def get_min_frame_idx(frames: list[Frame]) -> int:
     # frames idxes are in increasing order for most of time :)
@@ -144,6 +66,7 @@ def get_min_frame_idx(frames: list[Frame]) -> int:
             return n1
 
     raise ValueError("Frames are in wrong order")
+
 
 def detect_system(osd_path: pathlib.Path, verbatim: bool = False) -> tuple :
     with open(osd_path, "rb") as dump_f:
@@ -161,7 +84,6 @@ def detect_system(osd_path: pathlib.Path, verbatim: bool = False) -> tuple :
 
         print(f"{osd_path} has an invalid file header")
         sys.exit(1)
-
 
 
 def read_ws_osd_frames(osd_path: pathlib.Path, verbatim: bool = False) -> list[Frame]:
@@ -243,32 +165,76 @@ def read_dji_osd_frames(osd_path: pathlib.Path, verbatim: bool = False) -> list[
         print(f'Wrong idx of initial frame {start_frame}, abort')
         raise ValueError(f'Wrong idx of initial frame {start_frame}, abort')
 
-    return frames[start_frame:]
+    frames = frames[start_frame:]
+    zero_frame = []
+    if start_frame > 0:
+        zero_frame = [Frame(0, frames[0].idx, 0, None)]
+
+    return zero_frame + frames
 
 
-def render_frames(frames: list[Frame], font: Font, tmp_dir: str, cfg: Config, osd_type: int) -> None:
+def get_renderer(osd_type: int):
+    if osd_type == OSD_TYPE_DJI:
+        return DjiRenderer
+
+    return WsRenderer
+
+def render_test_frame(frames: list[Frame], srt_frames: list[SrtFrame], font: Font, cfg: Config, osd_type: int, video_path: pathlib.Path) -> None:
+    test_frame = osd_frame_idx(frames, args.testframe)
+    srt_idxs = [srt.idx for srt in srt_frames]
+    srt_slot = find_slots(srt_idxs, args.testframe, args.testframe+1)
+    srt_idx = None
+    if srt_slot:
+        srt_idx = srt_slot[0]
+    test_path = str(video_path.with_name('test_image.png'))
+    print(f"test frame created: {test_path}")
+    cls = get_renderer(osd_type)
+    renderer = cls(font=font, cfg=cfg, osd_type=osd_type, frames=frames, srt_frames=srt_frames)
+    renderer.render_test_frame(
+            test_frame,
+            srt_idx
+        ).save(test_path)
+
+    return
+
+
+def render_frames(frames: list[Frame], srt_frames: list[SrtFrame], font: Font, cfg: Config, osd_type: int, video_path: pathlib.Path, out_path: pathlib.Path) -> None:
     print(f"rendering {len(frames)} frames")
 
-    renderer = partial(render_single_frame, font, tmp_dir, cfg, osd_type)
+    cls = get_renderer(osd_type)
+    renderer = cls(font, cfg, osd_type, frames, srt_frames)
 
     for i in range(len(frames)-1):
         if frames[i].next_idx != frames[i+1].idx:
             print(f'incorrect frame {frames[i].next_idx}')
 
-    if cfg.singlecore:
-        for frame in tqdm(frames):
-            renderer(frame)
+    frames_idx_render = []
+    if srt_frames:
+        srt_idxs = [srt.idx for srt in srt_frames]
 
-        return
+        for idx, frame in enumerate(frames[:-1]):
+            start_frame = frame.idx
+            next_frame = frame.next_idx
+            frames = find_slots(srt_idxs, start_frame, next_frame)
+            frames_idx_render.append((idx, frames,))
+    else:
+        frames_idx_render = [(idx, None,) for frame in frames[:-1]]
+        
+    process = run_ffmpeg_stdin(cfg, video_path, out_path)
+    total_time = 0
+    for img in renderer.render_single_frame_in_memory(frames_idx_render):
+        ts = time.time_ns()
+        process.stdin.write(img)
+        total_time += (time.time_ns() - ts)
 
-    with Pool() as pool:
-        queue = pool.imap_unordered(renderer, tqdm(frames))
+    # Close the pipe to signal the end of input
+    process.stdin.close()
 
-        for _ in queue:
-            pass
+    # Wait for ffmpeg to finish
+    process.wait()
 
 
-def run_ffmpeg(start_number: int, cfg: Config, image_dir: str, video_path: pathlib.Path, out_path: pathlib.Path) -> None:
+def run_ffmpeg_stdin(cfg: Config, video_path: pathlib.Path, out_path: pathlib.Path) -> Popen[bytes]:
     codec = find_codec()
     if not codec:
         print('No ffmpeg codec found')
@@ -277,10 +243,10 @@ def run_ffmpeg(start_number: int, cfg: Config, image_dir: str, video_path: pathl
     if cfg.verbatim:
         print(f'Found a working codec: {codec}')
 
-    frame_overlay = ffmpeg.input(f"{image_dir}/%016d.png", start_number=start_number, framerate=60, thread_queue_size=4096)
-    video = ffmpeg.input(str(video_path), thread_queue_size=2048, hwaccel="auto")
+    frame_overlay = ffmpeg.input('pipe:', framerate=60, thread_queue_size=65536, vcodec="png")  # format="image2pipe", 
+    video = ffmpeg.input(str(video_path), thread_queue_size=4096, hwaccel="auto")
 
-    out_size = {"w": cfg.width, "h": cfg.height}
+    out_size = {"w": cfg.target_width, "h": cfg.target_height}
 
     output_params = {
         'video_bitrate': f"{cfg.bitrate}M",
@@ -302,31 +268,97 @@ def run_ffmpeg(start_number: int, cfg: Config, image_dir: str, video_path: pathl
     if args.hq:
         output_params.update(hq_output)
 
-    (
-        video.filter("scale", **out_size, force_original_aspect_ratio=1)
-        .filter("pad", **out_size, x=-1, y=-1, color="black")
-        .overlay(frame_overlay, x=0, y=0)
-        .output(str(out_path), **output_params)
-        .global_args('-loglevel', 'info' if args.verbatim else 'error')
-        .global_args('-stats')
-        .global_args('-hide_banner')
-        .overwrite_output()
-        .run()
-    )
+    return video.filter("scale", **out_size, force_original_aspect_ratio=1) \
+        .filter("pad", **out_size, x=-1, y=-1, color="black") \
+        .overlay(frame_overlay, x=0, y=0) \
+        .output(str(out_path), **output_params) \
+        .global_args('-loglevel', 'info' if args.verbatim else 'error') \
+        .global_args('-stats') \
+        .global_args('-hide_banner') \
+        .overwrite_output() \
+        .run_async(pipe_stdin=True)
+
+
+def read_srt_frames(srt_path: pathlib.Path, verbatim: bool, fps: int) -> list[SrtFrame]:
+    frames_per_ms = (1 / fps) * 1000
+
+    if verbatim:
+        print(f'Loading srt data from {srt_path}')
+    subs = pysrt.open(srt_path)
+
+    result = []
+    pattern = r'[-+]?\d*\.\d+|\d+'
+
+    for sub in subs:
+        items = sub.text.split(' ')
+        d = {}
+        for item in items:
+            name, val = item.lower().split(':')
+            val = re.search(pattern, val).group()
+            try:
+                val = int(val)
+            except ValueError:
+                val = float(val)
+            d[name] = val
+
+        ms = time_to_milliseconds(sub.start.to_time())
+        frame_idx = int(ms // frames_per_ms)
+        d['start_time'] = ms
+        d['idx'] = frame_idx
+        frame = SrtFrame(**d)
+        result.append(frame)
+
+    return result
+
+
+def osd_frame_idx(frames: list[Frame], frame_no: int) -> int | None:
+    """
+    Finds frame in list of osd frames that is inside range
+    """
+    left, right = 0, len(frames) - 1
+
+    while left <= right:
+        middle = (left + right) // 2
+        frame = frames[middle]
+
+        if frame.idx <= frame_no < frame.next_idx:
+            return middle
+
+        if frame_no < frame.idx:
+            right = middle - 1
+
+        elif frame_no >= frame.next_idx:
+            left = middle + 1
+
+    return None
 
 
 def main(args: Config):
     print(f"loading fonts from: {args.font}")
 
     if args.hd or args.fakehd:
-        font = Font(f"{args.font}_hd", is_hd=True)
+        font = Font(f"{args.font}_hd", is_hd=True, small_font_scale=args.srt_font_scale)
     else:
-        font = Font(args.font, is_hd=False)
+        font = Font(args.font, is_hd=False, small_font_scale=args.srt_font_scale)
 
     video_path = pathlib.Path(args.video)
     video_stem = video_path.stem
     osd_path = video_path.with_suffix('.osd')
+    srt_path = video_path.with_suffix('.srt')
     out_path = video_path.with_name(video_stem + "_with_osd.mp4")
+
+    # TODO: extract to validate function?
+    if not video_path.exists():
+        print(f'Video file "{video_path}" does not exists. Terminating.')
+        sys.exit(2)
+
+    if not osd_path.exists():
+        print(f'OSD file "{osd_path}" does not exists. Terminating.')
+        sys.exit(2)
+
+    srt_exists = srt_path.exists()
+
+    fps = get_fps(video_path)
 
     print(f"verbatim:  {args.verbatim}")
     print(f"loading OSD dump from:  {osd_path}")
@@ -336,39 +368,20 @@ def main(args: Config):
     if firmware == FW_ARDU:
         args.ardu = True
 
+    srt_frames = []
+    if srt_exists:
+        srt_frames = read_srt_frames(srt_path, args.verbatim, fps)
+
     if osd_type == OSD_TYPE_DJI:
         frames = read_dji_osd_frames(osd_path, args.verbatim)
     else:
         frames = read_ws_osd_frames(osd_path, args.verbatim)
 
     if args.testrun:
-        test_path = str(video_path.with_name('test_image.png'))
-        print(f"test frame created: {test_path}")
-        render_test_frame(
-            font=font,
-            frame=frames[args.testframe],
-            cfg=args, 
-            osd_type=osd_type
-        ).save(test_path)
-
+        render_test_frame(frames, srt_frames, font, args, osd_type, video_path)
         return
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        tm = time.time()
-        render_frames(frames, font, tmp_dir, args, osd_type)
-        if args.verbatim:
-            dt = (time.time() - tm)
-            print(f'Frames rendered in {dt} s')
-
-
-        print(f"passing to ffmpeg, out as {out_path}")
-
-        tm = time.time()
-        start_number = frames[0].idx
-        run_ffmpeg(start_number, args, tmp_dir, video_path, out_path)
-        if args.verbatim:
-            dt = (time.time() - tm)
-            print(f'Video rendered in {dt} s')
+    render_frames(frames, srt_frames, font, args, osd_type, video_path, out_path)
 
 
 if __name__ == "__main__":
@@ -382,13 +395,5 @@ if __name__ == "__main__":
     args.merge_cfg(parser.parse_args())
 
     args.calculate()
-
-    if os.name == 'nt':
-        # TODO: try to create symlink and set nolinks flag
-        import ctypes
-        adm = ctypes.windll.shell32.IsUserAnAdmin()
-        if not adm and not args.nolinks and not args.testrun:
-            print('To run you need priviledged shell. Check --nolinks option. Terminating.')
-            sys.exit(1)
 
     main(args)
