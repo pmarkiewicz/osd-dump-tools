@@ -1,33 +1,14 @@
-#from __future__ import annotations
 from dataclasses import dataclass
-import os
-from pathlib import Path
-
+from io import BytesIO
 from PIL import Image
 
 from .const import HD_TILE_WIDTH, SD_TILE_WIDTH, HD_TILE_HEIGHT, SD_TILE_HEIGHT, OSD_TYPE_DJI, ArduParams, InavParams
 from .font import Font
-from .frame import Frame
+from .frame import Frame, SrtFrame
 from .config import Config
-from .utils.ro_cls import read_only_class
 
 INTERNAL_W_H_DJI = (60, 22)
 INTERNAL_W_H_WS = (53, 20)
-
-
-def _get_display_dims(cfg: Config) -> tuple[int, int]:
-    if cfg.ardu_legacy:
-        return (50, 18)
-
-    return (60, 22)
-
-    # if cfg.fakehd:
-    #     return (60, 22)
-
-    # if cfg.hd:
-    #     return (50, 18)
-
-    # return (30, 15)
 
 
 @dataclass
@@ -38,148 +19,228 @@ class HiddenItemsCache():
     dist: tuple[int, int] | None = None
 
 
-_items_cache = HiddenItemsCache()
+class BaseRenderer:
+    _items_cache = HiddenItemsCache()
 
+    def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame]) -> None:
+        self.font = font
+        self.cfg = cfg
+        self.osd_type = osd_type
+        self.frames = frames
+        self.srt_frames = srt_frames
 
-def hide_items(img: Image, font: Font, exclusions, masking_tile, tile_width, tile_height) -> None:
-    if _items_cache.gps_lat:
-        for i in range(exclusions.GPS_LEN + 1):
-            x = (_items_cache.gps_lat[0] + i) * tile_width
-            y = _items_cache.gps_lat[1] * tile_height
-            img.paste(masking_tile, (x , y,), )
+        self.tile_width = HD_TILE_WIDTH
+        self.tile_height = HD_TILE_HEIGHT 
+        if not self.cfg.hd:
+            self.tile_width = SD_TILE_WIDTH
+            self.tile_height = SD_TILE_HEIGHT
 
-    if _items_cache.gps_lon:
-        for i in range(exclusions.GPS_LEN + 1):
-            x = (_items_cache.gps_lon[0] + i) * tile_width
-            y = _items_cache.gps_lon[1] * tile_height
-            img.paste(masking_tile, (x , y,), )
+        masking_font_no = ord(' ')
+        if self.cfg.testrun:
+            masking_font_no = ord('X')
 
-    if _items_cache.alt:
-        for i in range(exclusions.ALT_LEN + 1):
-            x = (_items_cache.alt[0] - i) * tile_width
-            y = _items_cache.alt[1] * tile_height
-            img.paste(masking_tile, (x , y,), )
+        self.masking_tile = self.font[masking_font_no]
 
-    if _items_cache.dist:
-        for i in range(exclusions.HOME_LEN + 1):
-            x = (_items_cache.dist[0] + i) * tile_width
-            y = _items_cache.dist[1] * tile_height
-            img.paste(masking_tile, (x , y,), )
+        self.exclusions = InavParams
+        if self.cfg.ardu:
+            self.exclusions = ArduParams
 
+        self.display_width = self.cfg.display_width
+        self.display_height = self.cfg.display_height
 
-def draw_frame(font: Font, frame: Frame, cfg: Config, osd_type, exclusions) -> Image.Image:
-    if osd_type == OSD_TYPE_DJI:
-        internal_width, internal_height = INTERNAL_W_H_DJI
-        display_width, display_height = _get_display_dims(cfg)
-        char_reader = lambda x, y: frame.data[y + x * internal_height]
+        self.final_img_size = (self.cfg.target_width, self.cfg.target_height)
 
-    else:
-        internal_width, internal_height = INTERNAL_W_H_WS
-        display_width, display_height = INTERNAL_W_H_WS
-        char_reader = lambda x, y: frame.data[x + y * internal_width]
+    def hide_items(self, img: Image) -> None:
+        if self._items_cache.gps_lat:
+            for i in range(self.exclusions.GPS_LEN + 1):
+                x = (self._items_cache.gps_lat[0] + i) * self.tile_width
+                y = self._items_cache.gps_lat[1] * self.tile_height
+                img.paste(self.masking_tile, (x , y,), )
 
-    tile_width = (HD_TILE_WIDTH if cfg.hd or cfg.fakehd else SD_TILE_WIDTH)
-    tile_height = (HD_TILE_HEIGHT if cfg.hd or cfg.fakehd else SD_TILE_HEIGHT)
+        if self._items_cache.gps_lon:
+            for i in range(self.exclusions.GPS_LEN + 1):
+                x = (self._items_cache.gps_lon[0] + i) * self.tile_width
+                y = self._items_cache.gps_lon[1] * self.tile_height
+                img.paste(self.masking_tile, (x , y,), )
 
-    img = Image.new(
-        "RGBA",
-        (
-            display_width  * tile_width,
-            display_height * tile_height,
-        ),
-    )
+        if self._items_cache.alt:
+            for i in range(self.exclusions.ALT_LEN + 1):
+                x = (self._items_cache.alt[0] - i) * self.tile_width
+                y = self._items_cache.alt[1] * self.tile_height
+                img.paste(self.masking_tile, (x , y,), )
 
-    gps_lat: tuple[int, int] | None = None
-    gps_lon: tuple[int, int] | None = None
-    alt: tuple[int, int] | None = None
+        if self._items_cache.dist:
+            for i in range(self.exclusions.HOME_LEN + 1):
+                x = (self._items_cache.dist[0] + i) * self.tile_width
+                y = self._items_cache.dist[1] * self.tile_height
+                img.paste(self.masking_tile, (x , y,), )
 
-    masking_font_no = ord(' ')
-    if cfg.testrun:
-        masking_font_no = ord('X')
+    def draw_str(self, x: int, y: int, txt: str, img: Image.Image) -> None:
+        tile_step = int(self.tile_width * self.cfg.srt_font_scale)
+        for n, c in enumerate(txt):
+            tile = self.font.get_small_font(ord(c))
+            x_pos = x + n
+            img.paste(tile, (x_pos * tile_step, y * self.tile_height,), )
 
-    masking_tile = font[masking_font_no]
+    @staticmethod
+    def fmt_float(txt: str) -> str:
+        n = txt.find('.')
+        d1 = txt[n-1:n]
+        d2 = txt[n+1:n+2]
+        ch1 = ord(d1) - 0x30
+        ch2 = ord(d2) - 0x30
+        ch1 += 0xA1
+        ch2 += 0xB1
 
-    for y in range(internal_height):
-        for x in range(internal_width):
-            char = char_reader(x, y)
-            tile = font[char]
+        result = [txt[:n-1], chr(ch1), chr(ch2), txt[n+2:]]
 
-            if cfg.exclude_area.is_excluded(x, y):
-                tile = masking_tile
+        return ''.join(result)
 
-            if cfg.hide_gps and char == exclusions.LAT_CHAR_CODE:
-                gps_lat = (x, y)
-                _items_cache.gps_lat = (x, y)
-                    
-            if cfg.hide_gps and char == exclusions.LON_CHAR_CODE:
-                gps_lon = (x, y)
-                _items_cache.gps_lon = (x, y)
+    def draw_srt(self, srt_frame: SrtFrame, img: Image.Image) -> Image.Image:
+        x, y = self.cfg.srt_start_location
+        if y < 0:   # location from screen bottom
+            y += self.display_height
 
-            if cfg.hide_alt and char == exclusions.ALT_CHAR_CODE:
-                alt = (x, y)
-                _items_cache.alt = (x, y)
+        for srt_item in self.cfg.srt_data:
+            fmt_str = f'{srt_item.upper()}:{{}}'
+            if srt_item in self.cfg.srt_fmt:
+                fmt_str = self.cfg.srt_fmt[srt_item]
+            data = getattr(srt_frame, srt_item)
+            txt = fmt_str.format(data)
+            if not self.cfg.ardu and '.' in txt:
+                txt = self.fmt_float(txt)
 
-            if cfg.hide_dist and char == exclusions.HOME_CHAR_CODE:
-                alt = (x, y)
-                _items_cache.dist = (x, y)
+            self.draw_str(x, y, txt, img)
+            x += len(txt) + 1
 
-            img.paste(tile, (x * tile_width, y * tile_height,), )
+        return img
 
-    # hide gps/alt data
-    # if any of items was present on frame we will use cache to be sure that all are deleted
-    if gps_lat or gps_lon or alt:
-        hide_items(img, font, exclusions, masking_tile, tile_width, tile_height)
+    def char_reader(frame: Frame, x: int, y: int) -> str:
+        pass
 
-    img_size = (cfg.width, cfg.height)
+    def draw_frame(self, frame: Frame) -> None:
+        img = Image.new(
+            "RGBA",
+            (
+                self.display_width  * self.tile_width,
+                self.display_height * self.tile_height,
+            ),
+        )
 
-    img = img.resize(img_size, Image.Resampling.LANCZOS)
+        if frame.size == 0:  # empty frame
+            self.draw_str(0, 0, 'NO OSD DATA', img)
+            return img
 
-    return img
+        gps_lat: tuple[int, int] | None = None
+        gps_lon: tuple[int, int] | None = None
+        alt: tuple[int, int] | None = None
 
+        for y in range(self.internal_height):
+            for x in range(self.internal_width):
+                char = self.char_reader(frame, x, y)
+                tile = self.font[char]
 
-def render_single_frame(font: Font, tmp_dir: str, cfg: Config, osd_type, frame: Frame) -> None:
-    exclusions = InavParams
-    if cfg.ardu:
-        exclusions = ArduParams
+                if self.cfg.exclude_area.is_excluded(x, y):
+                    tile = self.masking_tile
 
-    osd_img = draw_frame(
-        font=font,
-        frame=frame,
-        cfg=cfg,
-        osd_type=osd_type,
-        exclusions=exclusions,
-    )
+                if self.cfg.hide_gps and char == self.exclusions.LAT_CHAR_CODE:
+                    gps_lat = (x, y)
+                    self._items_cache.gps_lat = (x, y)
+                        
+                if self.cfg.hide_gps and char == self.exclusions.LON_CHAR_CODE:
+                    gps_lon = (x, y)
+                    self._items_cache.gps_lon = (x, y)
 
-    fname = f"{tmp_dir}/{frame.idx:016}.png"
-    osd_img.save(fname)
+                if self.cfg.hide_alt and char == self.exclusions.ALT_CHAR_CODE:
+                    alt = (x, y)
+                    self._items_cache.alt = (x, y)
 
-    next_frame_idx = frame.next_idx
+                if self.cfg.hide_dist and char == self.exclusions.HOME_CHAR_CODE:
+                    alt = (x, y)
+                    self._items_cache.dist = (x, y)
 
-    if next_frame_idx != 0:
-        for j in range(frame.idx + 1, next_frame_idx):
-            lfname = f"{tmp_dir}/{j:016}.png"
-            if Path(lfname).is_file() and cfg.verbatim:
-                print(f'File already exists: {lfname}, skipped')
-                continue
+                img.paste(tile, (x * self.tile_width, y * self.tile_height,), )
 
-            if cfg.nolinks:
-                osd_img.save(lfname)
+        # hide gps/alt data
+        # if any of items was present on frame we will use cache to be sure that all are deleted
+        if gps_lat or gps_lon or alt:
+            self.hide_items(img)
+
+        return img
+
+    def render_single_frame_in_memory(self, frames_idx_render) -> Image.Image:
+        for idx in frames_idx_render:
+            yield from self._render_single_frame_in_memory(idx)
+
+    def _render_single_frame_in_memory(self, idx: tuple) -> Image.Image:
+        frame_ranges, srt = idx
+        osd_frame = self.frames[frame_ranges]
+        frame_file_id = osd_frame.idx
+        base_osd_img = self.draw_frame(frame=osd_frame)
+
+        if len(srt) == 0:
+            frame_ranges = [(frame_file_id, osd_frame.next_idx, None, )]
+        elif len(srt) == 1:
+            frame_ranges = [(frame_file_id, osd_frame.next_idx, self.srt_frames[srt[0]], )]
+        else:
+            srt_data = None
+            if srt[0]:
+                srt_data = self.srt_frames[srt[0]]
+
+            frame_ranges = [(frame_file_id, self.srt_frames[srt[1]].idx, srt_data, )]
+            for i in range(1, len(srt) - 1):
+                n1 = srt[i]
+                n2 = srt[i+1]
+                frame_ranges.append((self.srt_frames[n1].idx, self.srt_frames[n2].idx, self.srt_frames[n1],))
+            frame_ranges.append((self.srt_frames[srt[-1]].idx, osd_frame.next_idx, self.srt_frames[srt[-1]]))
+
+        for fr in frame_ranges:
+            if fr[2]:
+                img_with_srt = self.draw_srt(fr[2], base_osd_img.copy())
             else:
-                os.symlink(fname, lfname)
+                img_with_srt = base_osd_img
+
+            img_size = (self.cfg.target_width, self.cfg.target_height)
+            img_with_srt = img_with_srt.resize(img_size, Image.Resampling.LANCZOS)
+            membuf = BytesIO()
+            img_with_srt.save(membuf, format="png") 
+            membuf.seek(0)
+            img = membuf.read()
+
+            yield img
+
+            for _ in range(fr[0] + 1, fr[1]):
+                yield img
+
+        return
+
+    def render_test_frame(self, frame_idx: int, srt_frame_idx: int | None) -> Image.Image:
+        # srt_frame: SrtFrame, idx: list[tuple]
+        frame = self.frames[frame_idx]
+        osd_img = self.draw_frame(frame=frame)
+
+        if srt_frame_idx:
+            srt_frame = self.srt_frames[srt_frame_idx]
+            self.draw_srt(srt_frame, osd_img)
+
+        osd_img = osd_img.resize(self.final_img_size, Image.Resampling.LANCZOS)
+
+        return osd_img
 
 
-def render_test_frame(font: Font, frame: Frame, cfg: Config, osd_type) -> None:
-    exclusions = InavParams
-    if cfg.ardu:
-        exclusions = ArduParams
+class DjiRenderer(BaseRenderer):
+    def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame]) -> None:
+        super().__init__(font, cfg, osd_type, frames, srt_frames)
+        self.internal_width, self.internal_height = INTERNAL_W_H_DJI
 
-    osd_img = draw_frame(
-        font=font,
-        frame=frame,
-        cfg=cfg,
-        osd_type=osd_type,
-        exclusions=exclusions,
-    )
+    def char_reader(self, frame: Frame, x: int, y: int) -> str:
+        return frame.data[y + x * self.internal_height]
+    
 
-    return osd_img
+class WsRenderer(BaseRenderer):
+    def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame]) -> None:
+        super().__init__(font, cfg, osd_type, frames, srt_frames)
+        self.internal_width, self.internal_height = INTERNAL_W_H_WS
 
+    def char_reader(self, frame: Frame, x: int, y: int) -> str:
+        return frame.data[x + y * self.internal_width]
