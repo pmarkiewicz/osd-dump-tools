@@ -2,52 +2,8 @@ from __future__ import annotations
 
 import argparse
 import sys
-from dataclasses import dataclass
 from configparser import ConfigParser
 from .const import DEFAULT_SECTION, SD_RESOLUTION_LIMIT, MAX_DISPLAY_X, MAX_DISPLAY_Y
-
-
-class ExcludeArea:
-    def __init__(self, s: str = None):
-
-        if not s:
-            self.x1 = -1
-            self.y1 = -1
-            self.x2 = -1
-            self.y2 = -1
-
-            return
-
-        nums = s.split(',')
-        if len(nums) != 4:
-            raise ValueError('Incorrect no of region parameters, should be 4, received {len(nums)}.')
-
-        self.x1 = int(nums[0])
-        self.y1 = int(nums[1])
-        self.x2 = int(nums[2])
-        self.y2 = int(nums[3])
-
-    def is_excluded(self, x: int, y: int) -> bool:
-        return self.x1 <= x < self.x2 and self.y1 <= y < self.y2
-
-
-class MultiExcludedAreas:
-    def __init__(self):
-        self.excluded_areas = []
-
-    def is_excluded(self, x: int, y: int) -> bool:
-        for area in self.excluded_areas:
-            if area.is_excluded(x, y):
-                return True
-
-        return False
-
-    def merge(self, params: ExcludeArea | list[ExcludeArea]) -> None :
-        try:
-            for area in params:
-                self.excluded_areas.append(area)
-        except TypeError:
-            self.excluded_areas.append(params)
 
 
 class Config:
@@ -65,17 +21,16 @@ class Config:
 
         self.font : str = ''
         self.bitrate: int = 25
-        self.testrun: bool = False
-        self.testframe: int = -1
+        self.out_resolution: str = 'fhd'
+        self.narrow: bool = False
         self.hq: bool = False
         self.hide_gps: bool = False
         self.hide_alt: bool = False
         self.hide_dist: bool = False
+        self.testrun: bool = False
+        self.testframe: int = -1
         self.verbatim: bool = False
         self.ardu: bool = False
-        self.ardu_legacy: bool = False
-        self.out_resolution: str = 'fhd'
-        self.narrow: bool = False
         self.osd_resolution: str = '60x22'
         self.srt = ''
 
@@ -92,7 +47,6 @@ class Config:
             'bitrate': 'BR:{:.1f}',
         }
 
-        self.exclude_area = MultiExcludedAreas()
 
         self.update_cfg(cfg[DEFAULT_SECTION])
 
@@ -126,13 +80,6 @@ class Config:
 
         # this is special case
         self.video = args.video
-
-        # and another special case
-        if self.ardu_legacy:
-            self.ardu = True
-
-        # merge regions
-        self.exclude_area.merge(args.ignore_area)
 
     def _calculate_video_resolution(self):
         out_resolution = self.out_resolution.lower()

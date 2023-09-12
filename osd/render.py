@@ -140,9 +140,6 @@ class BaseRenderer:
                 char = self.char_reader(frame, x, y)
                 tile = self.font[char]
 
-                if self.cfg.exclude_area.is_excluded(x, y):
-                    tile = self.masking_tile
-
                 if self.cfg.hide_gps and char == self.exclusions.LAT_CHAR_CODE:
                     gps_lat = (x, y)
                     self._items_cache.gps_lat = (x, y)

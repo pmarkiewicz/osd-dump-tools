@@ -1,5 +1,4 @@
 import argparse
-from .config import ExcludeArea
 
 
 def build_cmd_line_parser() -> argparse.ArgumentParser:
@@ -7,15 +6,11 @@ def build_cmd_line_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("video", type=str, help="video file e.g. DJIG0007.mp4")
     parser.add_argument(
-        "--font", type=str, default=None, help='font basename e.g. "font"'
+        "--font", type=str, default=None, help='font basename with path e.g. "C:\fonts_sneaky\font_ardu"'
     )
     parser.add_argument(
         "--bitrate", type=int, default=None, help='output bitrate'
     )
-    parser.add_argument(
-        "--ignore_area", type=ExcludeArea, nargs='*', default="-1, -1, 0, 0", help="don't display area (in fonts, x1,y1,x2,y2), i.e. 10,10,15,15, can be repeated"
-    )
-
     parser.add_argument(
         "--out_resolution", type=str, default=None, choices=['hd', 'fhd', '2k'], help="output resolution hd is 720 lines, fhd is 1080, 2k is 1440, default is fhd"
     )
