@@ -4,9 +4,16 @@ from .const import HD_TILE_WIDTH, SD_TILE_WIDTH, HD_TILE_HEIGHT, SD_TILE_HEIGHT,
 
 
 class Font:
-    def __init__(self, basename: str, is_hd: bool):
-        self.basename = basename
-        self.is_hd = is_hd
+    def __init__(self, basename: str, is_hd: bool, small_font_scale: int):
+        self.tile_width = SD_TILE_WIDTH
+        self.tile_height = SD_TILE_HEIGHT
+
+        if is_hd:
+            self.tile_width = HD_TILE_WIDTH
+            self.tile_height = HD_TILE_HEIGHT
+
+        self.small_font_scale = small_font_scale
+        self.small_font_cache = {}
 
         self.img = self._load_pair(basename)
 
@@ -16,8 +23,8 @@ class Font:
             img = Image.frombytes(
                 "RGBA",
                 (
-                    HD_TILE_WIDTH if self.is_hd else SD_TILE_WIDTH,
-                    (HD_TILE_HEIGHT if self.is_hd else SD_TILE_HEIGHT) * TILES_PER_PAGE,
+                    self.tile_width,
+                    self.tile_height * TILES_PER_PAGE,
                 ),
                 data,
             )
@@ -38,9 +45,20 @@ class Font:
         return self.img.crop(
             (
                 0,
-                key * (HD_TILE_HEIGHT if self.is_hd else SD_TILE_HEIGHT),
-                HD_TILE_WIDTH if self.is_hd else SD_TILE_WIDTH,
-                key * ((HD_TILE_HEIGHT if self.is_hd else SD_TILE_HEIGHT))
-                + (HD_TILE_HEIGHT if self.is_hd else SD_TILE_HEIGHT),
+                key * self.tile_height,
+                self.tile_width,
+                key * self.tile_height + self.tile_height,
             )
         )
+
+    def get_small_font(self, key: int) -> Image.Image:
+        if key in self.small_font_cache:
+            return self.small_font_cache[key]
+
+        tile = self[key]
+        tile_size = (int(self.tile_width * self.small_font_scale), int(self.tile_height * self.small_font_scale))
+
+        small_tile = tile.resize(tile_size, Image.Resampling.LANCZOS)
+        self.small_font_cache[key] = small_tile
+
+        return small_tile

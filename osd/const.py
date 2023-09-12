@@ -27,6 +27,7 @@ FW_INAV = 1
 FW_BETAFL = 2
 FW_ARDU = 3
 
+
 @read_only_class
 class ArduParams:
     LAT_CHAR_CODE: int = 167
@@ -37,6 +38,7 @@ class ArduParams:
     ALT_LEN: int = 4
     GPS_LEN: int = 12
     HOME_LEN: int = 6
+
 
 @read_only_class
 class InavParams:
