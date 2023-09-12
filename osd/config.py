@@ -47,7 +47,6 @@ class Config:
             'bitrate': 'BR:{:.1f}',
         }
 
-
         self.update_cfg(cfg[DEFAULT_SECTION])
 
     def set_value_from_cfg(self, cfg: ConfigParser, name: str, t: type) -> None:
@@ -63,14 +62,6 @@ class Config:
     def update_cfg(self, cfg) -> None:
         for name, typ in self.params:
             self.set_value_from_cfg(cfg, name, typ)
-
-        # update regions
-        for i in range(1, 100):
-            try:
-                val = cfg[f'ignore_area_{i}']
-                self.exclude_area.merge(ExcludeArea(val))
-            except KeyError:
-                break
 
     def merge_cfg(self, args: argparse.Namespace) -> None:
         for name, typ in self.params:
