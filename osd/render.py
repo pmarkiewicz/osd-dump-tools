@@ -131,6 +131,9 @@ class BaseRenderer:
             self.draw_str(0, 0, 'NO OSD DATA', img)
             return img
 
+        if self.cfg.overlay_img:
+            img.paste(self.cfg.overlay_img, self.cfg.overlay_location)
+
         gps_lat: tuple[int, int] | None = None
         gps_lon: tuple[int, int] | None = None
         alt: tuple[int, int] | None = None
@@ -174,8 +177,6 @@ class BaseRenderer:
         osd_frame = self.frames[frame_ranges]
         frame_file_id = osd_frame.idx
         base_osd_img = self.draw_frame(frame=osd_frame)
-        if self.cfg.overlay_img:
-            base_osd_img.paste(self.cfg.overlay_img, self.cfg.overlay_location)
 
         if len(srt) == 0:
             frame_ranges = [(frame_file_id, osd_frame.next_idx, None, )]

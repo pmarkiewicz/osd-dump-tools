@@ -5,12 +5,14 @@ import pathlib
 import sys
 from configparser import ConfigParser
 from PIL import Image, UnidentifiedImageError
-from .const import DEFAULT_SECTION, SD_RESOLUTION_LIMIT, MAX_DISPLAY_X, MAX_DISPLAY_Y
+from .const import DEFAULT_SECTION, SD_RESOLUTION_LIMIT, MAX_DISPLAY_X, MAX_DISPLAY_Y, FW_ARDU, HD_TILE_WIDTH
+from .dji_file_header import DJIFileHeader
+from .ws_file_header import WSFileHeader
 
 
 class Config:
     params: tuple[tuple[str, type]] = (
-        ('font', str), ('bitrate', int),
+        ('font', str), ('bitrate', int), ('ffmpeg_verbatim', bool),
         ('testrun', bool), ('testframe', int), ('hq', bool),
         ('hide_gps', bool), ('hide_alt', bool), ('hide_dist', bool), ('verbatim', bool),
         ('ardu', bool), ('overlay', str),
@@ -32,6 +34,7 @@ class Config:
         self.testrun: bool = False
         self.testframe: int = -1
         self.verbatim: bool = False
+        self.ffmpeg_verbatim: bool = False
         self.ardu: bool = False
         self.osd_resolution: str = '60x22'
         self.srt = ''
@@ -164,3 +167,18 @@ class Config:
         self._calculate_osd_resolution()
         self._update_srt()
         self._update_overlay()
+
+    def update_from_dji(self, dji_file_header: DJIFileHeader) -> None:
+        self.display_width = dji_file_header.char_width
+        self.display_height = dji_file_header.char_height
+        self.hd = dji_file_header.font_width == HD_TILE_WIDTH
+
+        if dji_file_header.font_variant == FW_ARDU:
+            self.ardu = True
+
+    def update_from_ws(self, ws_file_header: WSFileHeader) -> None:
+        self.display_width = ws_file_header.char_width
+        self.display_height = ws_file_header.char_height
+
+        if ws_file_header.system == 'ARDU':
+            self.ardu = True

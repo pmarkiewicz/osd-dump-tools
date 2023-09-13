@@ -48,6 +48,10 @@ def build_cmd_line_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--ffmpeg_verbatim", action="store_true", default=None, help="Display detailed information from ffmpeg"
+    )
+
+    parser.add_argument(
         "--ardu", action="store_true", default=None, help="Hide gps/alt/distance for ArduPilot"
     )
 

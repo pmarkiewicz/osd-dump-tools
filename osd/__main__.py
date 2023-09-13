@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from multiprocessing import Pool
-import os
 import pathlib
 import struct
 import sys
-import tempfile
 import time
 from configparser import ConfigParser
 from subprocess import Popen
@@ -13,7 +10,6 @@ import re
 
 import pysrt
 import ffmpeg
-from tqdm import tqdm
 
 from .render import DjiRenderer, WsRenderer
 from .frame import Frame, SrtFrame
@@ -25,47 +21,13 @@ from .utils.find_slot import find_slots
 from .utils.fps import get_fps
 from .utils.time_to_ms import time_to_milliseconds
 from .cmd_line import build_cmd_line_parser
+from .dji import read_dji_osd_frames
+from .ws import read_ws_osd_frames
 
-MIN_START_FRAME_NO: int = 20
-WS_VIDEO_FPS = 60
 
 file_header_struct_detect = struct.Struct("<4s")
 # < little-endian
 # 4s string
-
-file_header_struct_ws = struct.Struct("<4s36B")
-# < little-endian
-# 4s string
-# 36B unsigned char
-
-frame_header_struct_ws = struct.Struct("<L1060H")
-# < little-endian
-# L unsigned long
-# 1060H unsigned short
-
-file_header_struct_dji = struct.Struct("<7sH4B2HB") 
-# < little-endian
-# 7s string
-# H unsigned short
-# 4B unsigned char
-# 2H unsigned short
-# B unsigned char
-frame_header_struct_dji = struct.Struct("<II")
-# < little-endian
-# I unsigned int
-# I unsigned int
-
-
-def get_min_frame_idx(frames: list[Frame]) -> int:
-    # frames idxes are in increasing order for most of time :)
-
-    for i in range(len(frames)):
-        n1 = frames[i].idx
-        n2 = frames[i+1].idx
-        if n1 < n2:
-            return n1
-
-    raise ValueError("Frames are in wrong order")
 
 
 def detect_system(osd_path: pathlib.Path, verbatim: bool = False) -> tuple :
@@ -86,93 +48,6 @@ def detect_system(osd_path: pathlib.Path, verbatim: bool = False) -> tuple :
         sys.exit(1)
 
 
-def read_ws_osd_frames(osd_path: pathlib.Path, verbatim: bool = False) -> list[Frame]:
-    frames_per_ms = (1 / WS_VIDEO_FPS) * 1000
-    frames: list[Frame] = []
-
-    with open(osd_path, "rb") as dump_f:
-        file_header_data = dump_f.read(file_header_struct_ws.size)
-        file_header = file_header_struct_ws.unpack(file_header_data)
-
-        if verbatim:
-            print(f"system:    {file_header[0].decode('ascii')}")
-
-        while True:
-            frame_header = dump_f.read(frame_header_struct_ws.size)
-            if len(frame_header) == 0:
-                break
-
-            frame = frame_header_struct_ws.unpack(frame_header)
-            osd_time = frame[0]
-            frame_idx = int(osd_time // frames_per_ms)
-            frame_data = frame[1:]
-
-            if len(frames) > 0 and frames[-1].idx == frame_idx:
-                if verbatim:
-                    print(f'Duplicate frame: {frame_idx}')
-                continue
-
-            if len(frames) > 0:
-                frames[-1].next_idx = frame_idx
-
-            frames.append(Frame(frame_idx, 0, frame_header_struct_ws.size, frame_data))
-
-    return frames
-
-
-def read_dji_osd_frames(osd_path: pathlib.Path, verbatim: bool = False) -> list[Frame]:
-    frames: list[Frame] = []
-
-    with open(osd_path, "rb") as dump_f:
-        file_header_data = dump_f.read(file_header_struct_dji.size)
-        file_header = file_header_struct_dji.unpack(file_header_data)
-
-        if verbatim:
-            print(f"file header:    {file_header[0].decode('ascii')}")
-            print(f"file version:   {file_header[1]}")
-            print(f"char width:     {file_header[2]}")
-            print(f"char height:    {file_header[3]}")
-            print(f"font widtht:    {file_header[4]}")
-            print(f"font height:    {file_header[5]}")
-            print(f"x offset:       {file_header[6]}")
-            print(f"y offset:       {file_header[7]}")
-            print(f"font variant:   {file_header[8]}")
-
-        while True:
-            frame_header = dump_f.read(frame_header_struct_dji.size)
-            if len(frame_header) == 0:
-                break
-
-            frame_head = frame_header_struct_dji.unpack(frame_header)
-            frame_idx, frame_size = frame_head
-
-            frame_data_struct = struct.Struct(f"<{frame_size}H")
-            frame_data = dump_f.read(frame_data_struct.size)
-            frame_data = frame_data_struct.unpack(frame_data)
-
-            if len(frames) > 0 and frames[-1].idx == frame_idx:
-                if verbatim:
-                    print(f'Duplicate frame: {frame_idx}')
-                continue
-
-            if len(frames) > 0:
-                frames[-1].next_idx = frame_idx
-
-            frames.append(Frame(frame_idx, 0, frame_size, frame_data))
-
-    # remove initial random frames
-    start_frame = get_min_frame_idx(frames)
-
-    if start_frame > MIN_START_FRAME_NO:
-        print(f'Wrong idx of initial frame {start_frame}, abort')
-        raise ValueError(f'Wrong idx of initial frame {start_frame}, abort')
-
-    frames = frames[start_frame:]
-    zero_frame = []
-    if start_frame > 0:
-        zero_frame = [Frame(0, frames[0].idx, 0, None)]
-
-    return zero_frame + frames
 
 
 def get_renderer(osd_type: int):
@@ -275,7 +150,7 @@ def run_ffmpeg_stdin(cfg: Config, video_path: pathlib.Path, out_path: pathlib.Pa
         .filter("pad", **out_size, x=-1, y=-1, color="black") \
         .overlay(frame_overlay, x=0, y=0) \
         .output(str(out_path), **output_params) \
-        .global_args('-loglevel', 'info' if args.verbatim else 'error') \
+        .global_args('-loglevel', 'info' if args.ffmpeg_verbatim else 'error') \
         .global_args('-stats') \
         .global_args('-hide_banner') \
         .overwrite_output() \
@@ -368,17 +243,14 @@ def main(args: Config):
 
     osd_type, firmware = detect_system(osd_path)
 
-    if firmware == FW_ARDU:
-        args.ardu = True
-
     srt_frames = []
     if srt_exists:
         srt_frames = read_srt_frames(srt_path, args.verbatim, fps)
 
     if osd_type == OSD_TYPE_DJI:
-        frames = read_dji_osd_frames(osd_path, args.verbatim)
+        frames = read_dji_osd_frames(osd_path, args.verbatim, args)
     else:
-        frames = read_ws_osd_frames(osd_path, args.verbatim)
+        frames = read_ws_osd_frames(osd_path, args.verbatim, args)
 
     if args.testrun:
         render_test_frame(frames, srt_frames, font, args, osd_type, video_path)
