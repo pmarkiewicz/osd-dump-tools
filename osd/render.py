@@ -174,6 +174,8 @@ class BaseRenderer:
         osd_frame = self.frames[frame_ranges]
         frame_file_id = osd_frame.idx
         base_osd_img = self.draw_frame(frame=osd_frame)
+        if self.cfg.overlay_img:
+            base_osd_img.paste(self.cfg.overlay_img, self.cfg.overlay_location)
 
         if len(srt) == 0:
             frame_ranges = [(frame_file_id, osd_frame.next_idx, None, )]
@@ -197,8 +199,7 @@ class BaseRenderer:
             else:
                 img_with_srt = base_osd_img
 
-            img_size = (self.cfg.target_width, self.cfg.target_height)
-            img_with_srt = img_with_srt.resize(img_size, Image.Resampling.LANCZOS)
+            img_with_srt = img_with_srt.resize(self.final_img_size, Image.Resampling.LANCZOS)
             membuf = BytesIO()
             img_with_srt.save(membuf, format="png") 
             membuf.seek(0)
@@ -215,6 +216,8 @@ class BaseRenderer:
         # srt_frame: SrtFrame, idx: list[tuple]
         frame = self.frames[frame_idx]
         osd_img = self.draw_frame(frame=frame)
+        if self.cfg.overlay_img:
+            osd_img.paste(self.cfg.overlay_img, self.cfg.overlay_location)
 
         if srt_frame_idx:
             srt_frame = self.srt_frames[srt_frame_idx]

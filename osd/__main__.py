@@ -108,7 +108,8 @@ def read_ws_osd_frames(osd_path: pathlib.Path, verbatim: bool = False) -> list[F
             frame_data = frame[1:]
 
             if len(frames) > 0 and frames[-1].idx == frame_idx:
-                print(f'Duplicate frame: {frame_idx}')
+                if verbatim:
+                    print(f'Duplicate frame: {frame_idx}')
                 continue
 
             if len(frames) > 0:
@@ -150,7 +151,8 @@ def read_dji_osd_frames(osd_path: pathlib.Path, verbatim: bool = False) -> list[
             frame_data = frame_data_struct.unpack(frame_data)
 
             if len(frames) > 0 and frames[-1].idx == frame_idx:
-                print(f'Duplicate frame: {frame_idx}')
+                if verbatim:
+                    print(f'Duplicate frame: {frame_idx}')
                 continue
 
             if len(frames) > 0:
@@ -178,6 +180,7 @@ def get_renderer(osd_type: int):
         return DjiRenderer
 
     return WsRenderer
+
 
 def render_test_frame(frames: list[Frame], srt_frames: list[SrtFrame], font: Font, cfg: Config, osd_type: int, video_path: pathlib.Path) -> None:
     test_frame = osd_frame_idx(frames, args.testframe)
@@ -336,7 +339,7 @@ def osd_frame_idx(frames: list[Frame], frame_no: int) -> int | None:
 def main(args: Config):
     print(f"loading fonts from: {args.font}")
 
-    if args.hd or args.fakehd:
+    if args.hd:
         font = Font(f"{args.font}_hd", is_hd=True, small_font_scale=args.srt_font_scale)
     else:
         font = Font(args.font, is_hd=False, small_font_scale=args.srt_font_scale)

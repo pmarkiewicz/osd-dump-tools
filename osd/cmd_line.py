@@ -59,4 +59,8 @@ def build_cmd_line_parser() -> argparse.ArgumentParser:
         "--srt", type=str, default=None, help='Display information from srt file, list separated by :, signal:ch:delay:bitrate'
     )
 
+    parser.add_argument(
+        "--overlay", type=str, default=None, help='Overlay image, parameters are comma separated x,y,img like 10,100,resources\inav_icon_128.png'
+    )
+
     return parser

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import pathlib
 import sys
 from configparser import ConfigParser
+from PIL import Image, UnidentifiedImageError
 from .const import DEFAULT_SECTION, SD_RESOLUTION_LIMIT, MAX_DISPLAY_X, MAX_DISPLAY_Y
 
 
@@ -11,7 +13,7 @@ class Config:
         ('font', str), ('bitrate', int),
         ('testrun', bool), ('testframe', int), ('hq', bool),
         ('hide_gps', bool), ('hide_alt', bool), ('hide_dist', bool), ('verbatim', bool),
-        ('ardu', bool), 
+        ('ardu', bool), ('overlay', str),
         ('out_resolution', str), ('narrow', bool),
         ('osd_resolution', str), ('srt', str),
     )
@@ -33,10 +35,13 @@ class Config:
         self.ardu: bool = False
         self.osd_resolution: str = '60x22'
         self.srt = ''
+        self.overlay = None
 
         self.hd: bool = True
         self.display_width: int = -1
         self.display_height: int = -1
+        self.overlay_location = None
+        self.overlay_img = None
         self.srt_data = []
         self.srt_font_scale = 0.7
         self.srt_start_location = (1, -1,)
@@ -118,6 +123,39 @@ class Config:
             items = self.srt.split(':')
             self.srt_data = items
 
+    def _update_overlay(self):
+        if self.overlay:
+            parts = self.overlay.split(',')
+            if len(parts) != 3:
+                print('Incorrect no of params for overlay')
+                sys.exit(4)
+
+            try:
+                x = int(parts[0].strip())
+                y = int(parts[1].strip())
+            except ValueError:
+                print('Incorrect overlay coordinates')
+                sys.exit(4)
+
+            img_path = pathlib.Path(parts[2])
+            if not img_path.exists():
+                print(f'Overlay file "{img_path}" does not exists. Terminating.')
+                sys.exit(4)
+
+            try:
+                img = Image.open(img_path)
+            except UnidentifiedImageError:
+                print(f'Unrecognised image {img_path}')
+                sys.exit(4)
+
+            # if x < 0:
+            #     x = self.target_width + x * img.width
+            # if y < 0:
+            #     y = self.target_height + y * img.width
+
+            self.overlay_img = img
+            self.overlay_location = (x, y,)
+
     def calculate(self):
         """
         Calculate config parameters based on other values
@@ -125,3 +163,4 @@ class Config:
         self._calculate_video_resolution()
         self._calculate_osd_resolution()
         self._update_srt()
+        self._update_overlay()
