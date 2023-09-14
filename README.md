@@ -55,7 +55,7 @@ $ python -m osd --help
 
   options:
     -h, --help    show this help message and exit
-    --font FONT   font basename e.g. "font"
+    --font folder   folder where are all font files (inav, ardu, bf)
     --bitrate     output bitrate, default is 25mbps
     --out_resolution [hd, fhd, 2k]  output resolution hd is 720 lines, fhd is 1080, 2k is 1440, default is fhd
     --hq              render output files with high quality as described in [FFMPEG FAQ](https://ffmpeg.org/faq.html#Which-are-good-parameters-for-encoding-high-quality-MPEG_002d4_003f)

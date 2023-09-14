@@ -6,7 +6,7 @@ def build_cmd_line_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("video", type=str, help="video file e.g. DJIG0007.mp4")
     parser.add_argument(
-        "--font", type=str, default=None, help='font basename with path e.g. "C:\fonts_sneaky\font_ardu"'
+        "--font", type=str, default=None, help='folder where are all font files (inav, ardu, bf)'
     )
     parser.add_argument(
         "--bitrate", type=int, default=None, help='output bitrate'

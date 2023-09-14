@@ -214,14 +214,17 @@ def osd_frame_idx(frames: list[Frame], frame_no: int) -> int | None:
     return None
 
 
+def decode_system(firmware: int) -> str:
+    if firmware == FW_BETAFL:
+        return 'bf'
+    
+    if firmware == FW_ARDU:
+        return 'ardu'
+    
+    return 'inav'
+
+
 def main(args: Config):
-    print(f"loading fonts from: {args.font}")
-
-    if args.hd:
-        font = Font(f"{args.font}_hd", is_hd=True, small_font_scale=args.srt_font_scale)
-    else:
-        font = Font(args.font, is_hd=False, small_font_scale=args.srt_font_scale)
-
     video_path = pathlib.Path(args.video)
     video_stem = video_path.stem
     osd_path = video_path.with_suffix('.osd')
@@ -258,6 +261,13 @@ def main(args: Config):
         frames = read_dji_osd_frames(osd_path, args.verbatim, args)
     else:
         frames = read_ws_osd_frames(osd_path, args.verbatim, args)
+
+    print(f"loading fonts from: {args.font}")
+    system_name = decode_system(firmware)
+    hd = '_hd' if args.hd else ''
+    font_file_name = pathlib.Path(args.font) / f'font_{system_name}{hd}'
+
+    font = Font(font_file_name, args.hd, small_font_scale=args.srt_font_scale)
 
     if args.testrun:
         render_test_frame(frames, srt_frames, font, args, osd_type, video_path)
