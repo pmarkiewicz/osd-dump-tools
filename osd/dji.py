@@ -33,6 +33,14 @@ def _get_min_frame_idx(frames: list[Frame]) -> int:
     raise ValueError("Frames are in wrong order")
 
 
+def read_dji_osd_header(osd_path: pathlib.Path) -> DJIFileHeader:
+    with open(osd_path, "rb") as dump_f:
+        file_header_data = dump_f.read(file_header_struct_dji.size)
+        file_header = file_header_struct_dji.unpack(file_header_data)
+        
+    return DJIFileHeader(file_header)
+
+
 def read_dji_osd_frames(osd_path: pathlib.Path, verbatim: bool, cfg: Config) -> list[Frame]:
     frames: list[Frame] = []
 

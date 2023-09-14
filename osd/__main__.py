@@ -18,10 +18,11 @@ from .const import CONFIG_FILE_NAME, OSD_TYPE_DJI, OSD_TYPE_WS, FW_ARDU, FW_INAV
 from .config import Config
 from .utils.codecs import find_codec
 from .utils.find_slot import find_slots
-from .utils.fps import get_fps
+from .utils.video_props import get_video_properties, VideoProperties
 from .utils.time_to_ms import time_to_milliseconds
 from .cmd_line import build_cmd_line_parser
-from .dji import read_dji_osd_frames
+from .dji import read_dji_osd_frames, read_dji_osd_header
+from .dji_file_header import DJIFileHeader
 from .ws import read_ws_osd_frames
 
 
@@ -35,19 +36,21 @@ def detect_system(osd_path: pathlib.Path, verbatim: bool = False) -> tuple :
         file_header_data = dump_f.read(file_header_struct_detect.size)
         file_header = file_header_struct_detect.unpack(file_header_data)
 
-        if file_header[0] == b'MSPO':
-            return OSD_TYPE_DJI, FW_UNKNOWN
-        if file_header[0] == b'INAV':
-            return OSD_TYPE_WS, FW_INAV
-        if file_header[0] == b'BTFL':
-            return OSD_TYPE_WS, FW_BETAFL
-        if file_header[0] == b'ARDU':
-            return OSD_TYPE_WS, FW_ARDU
+    if file_header[0] == b'MSPO':
+        dji_file_header = read_dji_osd_header(osd_path)
+        fw = FW_INAV
+        if dji_file_header.font_variant == 3:   # TODO: change to const, what about BF?
+            fw = FW_ARDU
+        return OSD_TYPE_DJI, fw
+    if file_header[0] == b'INAV':
+        return OSD_TYPE_WS, FW_INAV
+    if file_header[0] == b'BTFL':
+        return OSD_TYPE_WS, FW_BETAFL
+    if file_header[0] == b'ARDU':
+        return OSD_TYPE_WS, FW_ARDU
 
-        print(f"{osd_path} has an invalid file header")
-        sys.exit(1)
-
-
+    print(f"{osd_path} has an invalid file header")
+    sys.exit(1)
 
 
 def get_renderer(osd_type: int):
@@ -236,16 +239,20 @@ def main(args: Config):
 
     srt_exists = srt_path.exists()
 
-    fps = get_fps(video_path)
+    video_props = get_video_properties(video_path)
+    args.update_narrow(video_props.width, video_props.height)
 
     print(f"verbatim:  {args.verbatim}")
     print(f"loading OSD dump from:  {osd_path}")
+
+    if args.verbatim:
+        print(f'Source video: {video_props.width}x{video_props.height} {video_props.fps}fps')
 
     osd_type, firmware = detect_system(osd_path)
 
     srt_frames = []
     if srt_exists:
-        srt_frames = read_srt_frames(srt_path, args.verbatim, fps)
+        srt_frames = read_srt_frames(srt_path, args.verbatim, video_props.fps)
 
     if osd_type == OSD_TYPE_DJI:
         frames = read_dji_osd_frames(osd_path, args.verbatim, args)

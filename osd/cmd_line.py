@@ -16,10 +16,6 @@ def build_cmd_line_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--narrow", action="store_true", default=None, help="use 4:3 proportions instead of default 16:9"
-    )
-
-    parser.add_argument(
         "--hq", action="store_true", default=None, help="render with high quality profile (slower)"
     )
 

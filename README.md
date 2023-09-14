@@ -58,7 +58,6 @@ $ python -m osd --help
     --font FONT   font basename e.g. "font"
     --bitrate     output bitrate, default is 25mbps
     --out_resolution [hd, fhd, 2k]  output resolution hd is 720 lines, fhd is 1080, 2k is 1440, default is fhd
-    --narrow          use 4:3 screen proportion instead of 16:9
     --hq              render output files with high quality as described in [FFMPEG FAQ](https://ffmpeg.org/faq.html#Which-are-good-parameters-for-encoding-high-quality-MPEG_002d4_003f)
     --hide_gps        automatically hides gps coordinates from video
     --hide_alt        automatically hides altitude

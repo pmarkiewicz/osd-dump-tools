@@ -16,7 +16,7 @@ class Config:
         ('testrun', bool), ('testframe', int), ('hq', bool),
         ('hide_gps', bool), ('hide_alt', bool), ('hide_dist', bool), ('verbatim', bool),
         ('ardu', bool), ('overlay', str),
-        ('out_resolution', str), ('narrow', bool),
+        ('out_resolution', str), 
         ('osd_resolution', str), ('srt', str),
     )
 
@@ -182,3 +182,7 @@ class Config:
 
         if ws_file_header.system == 'ARDU':
             self.ardu = True
+
+    def update_narrow(self, width: int, height: int) -> None:
+        if (height / width) == 0.75:
+            self.narrow = True

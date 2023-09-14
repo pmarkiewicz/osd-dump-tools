@@ -22,6 +22,9 @@ def find_slots(sequence: list[int], start: int, end: int) -> list[int]:
         print('Missing end sequence')
         return []
 
+    if n1 >= len(sequence):
+        return []
+    
     if start == sequence[n1]:
         # another special case first element is same as start
         return list(range(n1, n2))

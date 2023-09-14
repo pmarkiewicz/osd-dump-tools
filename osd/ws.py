@@ -20,6 +20,14 @@ frame_header_struct_ws = struct.Struct("<L1060H")
 # 1060H unsigned short
 
 
+def read_ws_osd_header(osd_path: pathlib.Path) -> WSFileHeader:
+    with open(osd_path, "rb") as dump_f:
+        file_header_data = dump_f.read(file_header_struct_ws.size)
+        file_header = file_header_struct_ws.unpack(file_header_data)
+
+    return WSFileHeader(file_header)
+
+
 def read_ws_osd_frames(osd_path: pathlib.Path, verbatim: bool, cfg: Config) -> list[Frame]:
     frames_per_ms = (1 / WS_VIDEO_FPS) * 1000
     frames: list[Frame] = []
