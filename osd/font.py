@@ -4,6 +4,8 @@ from .const import HD_TILE_WIDTH, SD_TILE_WIDTH, HD_TILE_HEIGHT, SD_TILE_HEIGHT,
 
 
 class Font:
+    __slots__ = 'tile_width', 'tile_height', 'small_font_scale', 'small_font_cache', 'img'
+    
     def __init__(self, basename: str, is_hd: bool, small_font_scale: int):
         self.tile_width = SD_TILE_WIDTH
         self.tile_height = SD_TILE_HEIGHT

@@ -4,7 +4,7 @@ import pathlib
 import cv2
 
 
-@dataclass
+@dataclass(slots=True)
 class VideoProperties:
     fps: int
     width: int

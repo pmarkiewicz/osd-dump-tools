@@ -1,14 +1,14 @@
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(slots=True)
 class Frame:
     idx: int
     next_idx: int
     size: int
     data: bytes
 
-@dataclass
+@dataclass(slots=True)
 class SrtFrame:
     start_time: float
     idx: int

@@ -11,7 +11,7 @@ INTERNAL_W_H_DJI = (60, 22)
 INTERNAL_W_H_WS = (53, 20)
 
 
-@dataclass
+@dataclass(slots=True)
 class HiddenItemsCache():
     gps_lat: tuple[int, int] | None = None
     gps_lon: tuple[int, int] | None = None
@@ -20,6 +20,8 @@ class HiddenItemsCache():
 
 
 class BaseRenderer:
+    __slots__ = 'font', 'cfg', 'osd_type', 'frames', 'srt_frames', 'tile_width', 'tile_height', 'masking_tile', 'exclusions', 'display_width', 'display_height', 'final_img_size'
+
     _items_cache = HiddenItemsCache()
 
     def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame]) -> None:
@@ -174,7 +176,7 @@ class BaseRenderer:
         osd_frame = self.frames[frame_ranges]
         frame_file_id = osd_frame.idx
         base_osd_img = self.draw_frame(frame=osd_frame)
-        
+
         if self.cfg.overlay_img:
             base_osd_img.paste(self.cfg.overlay_img, self.cfg.overlay_location)
 
