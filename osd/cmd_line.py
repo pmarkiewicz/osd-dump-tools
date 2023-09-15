@@ -48,14 +48,6 @@ def build_cmd_line_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--ardu", action="store_true", default=None, help="Hide gps/alt/distance for ArduPilot"
-    )
-
-    parser.add_argument(
-        "--osd_resolution", type=str, default='60x22', help='OSD resolution, default is 60x22, other popular are: "50x18" and "30x16"'
-    )
-
-    parser.add_argument(
         "--srt", type=str, default=None, help='Display information from srt file, list separated by :, signal:ch:delay:bitrate'
     )
 

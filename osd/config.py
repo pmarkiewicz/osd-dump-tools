@@ -15,9 +15,7 @@ class Config:
         ('font', str), ('bitrate', int), ('ffmpeg_verbatim', bool),
         ('testrun', bool), ('testframe', int), ('hq', bool),
         ('hide_gps', bool), ('hide_alt', bool), ('hide_dist', bool), ('verbatim', bool),
-        ('ardu', bool), ('overlay', str),
-        ('out_resolution', str), 
-        ('osd_resolution', str), ('srt', str),
+        ('overlay', str), ('out_resolution', str), ('srt', str),
     )
 
     def __init__(self, cfg: ConfigParser):
@@ -98,29 +96,6 @@ class Config:
         else:
             self.target_width = (self.target_height * 16) // 9
 
-    def _calculate_osd_resolution(self):
-        dims = self.osd_resolution.split('x')
-        if len(dims) != 2:
-            print(f'Parameter osd_resolution has incorrect format: "{self.osd_resolution}"')
-            sys.exit(2)
-
-        try:
-            self.display_width = int(dims[0])
-            self.display_height = int(dims[1])
-        except ValueError:
-            print(f'Parameter osd_resolution has incorrect value: "{self.osd_resolution}"')
-            sys.exit(3)
-
-        if self.display_width > MAX_DISPLAY_X:
-            print(f'Parameter width {self.display_width} for osd_resolution is too big, limit is: "{MAX_DISPLAY_X}"')
-            sys.exit(4)
-
-        if self.display_height > MAX_DISPLAY_Y:
-            print(f'Parameter width {self.display_height} for osd_resolution is too big, limit is: "{MAX_DISPLAY_Y}"')
-            sys.exit(4)
-
-        self.hd = self.display_width > SD_RESOLUTION_LIMIT
-
     def _update_srt(self):
         if self.srt:
             items = self.srt.split(':')
@@ -164,7 +139,6 @@ class Config:
         Calculate config parameters based on other values
         """
         self._calculate_video_resolution()
-        self._calculate_osd_resolution()
         self._update_srt()
         self._update_overlay()
 
@@ -184,5 +158,5 @@ class Config:
             self.ardu = True
 
     def update_narrow(self, width: int, height: int) -> None:
-        if (height / width) == 0.75:
+        if (height / width) >= 0.70:
             self.narrow = True
