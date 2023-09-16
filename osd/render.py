@@ -247,3 +247,10 @@ class WsRenderer(BaseRenderer):
 
     def char_reader(self, frame: Frame, x: int, y: int) -> str:
         return frame.data[x + y * self.internal_width]
+
+
+def get_renderer(osd_type: int):
+    if osd_type == OSD_TYPE_DJI:
+        return DjiRenderer
+
+    return WsRenderer

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pathlib
-import struct
 import sys
 import time
 from configparser import ConfigParser
@@ -11,53 +10,23 @@ import re
 import pysrt
 import ffmpeg
 
-from .render import DjiRenderer, WsRenderer
+from .utils.osd_props import detect_system, decode_system_str
+from .render import DjiRenderer, WsRenderer, get_renderer
 from .frame import Frame, SrtFrame
 from .font import Font
-from .const import CONFIG_FILE_NAME, OSD_TYPE_DJI, OSD_TYPE_WS, FW_ARDU, FW_INAV, FW_BETAFL, FW_UNKNOWN
+from .const import CONFIG_FILE_NAME, OSD_TYPE_DJI
 from .config import Config
 from .utils.codecs import find_codec
 from .utils.find_slot import find_slots
 from .utils.video_props import get_video_properties, VideoProperties
 from .utils.time_to_ms import time_to_milliseconds
+from .utils.srt import read_srt_frames
 from .cmd_line import build_cmd_line_parser
 from .dji import read_dji_osd_frames, read_dji_osd_header
 from .dji_file_header import DJIFileHeader
 from .ws import read_ws_osd_frames
 
 
-file_header_struct_detect = struct.Struct("<4s")
-# < little-endian
-# 4s string
-
-
-def detect_system(osd_path: pathlib.Path, verbatim: bool = False) -> tuple :
-    with open(osd_path, "rb") as dump_f:
-        file_header_data = dump_f.read(file_header_struct_detect.size)
-        file_header = file_header_struct_detect.unpack(file_header_data)
-
-    if file_header[0] == b'MSPO':
-        dji_file_header = read_dji_osd_header(osd_path)
-        fw = FW_INAV
-        if dji_file_header.font_variant == 3:   # TODO: change to const, what about BF?
-            fw = FW_ARDU
-        return OSD_TYPE_DJI, fw
-    if file_header[0] == b'INAV':
-        return OSD_TYPE_WS, FW_INAV
-    if file_header[0] == b'BTFL':
-        return OSD_TYPE_WS, FW_BETAFL
-    if file_header[0] == b'ARDU':
-        return OSD_TYPE_WS, FW_ARDU
-
-    print(f"{osd_path} has an invalid file header")
-    sys.exit(1)
-
-
-def get_renderer(osd_type: int):
-    if osd_type == OSD_TYPE_DJI:
-        return DjiRenderer
-
-    return WsRenderer
 
 
 def render_test_frame(frames: list[Frame], srt_frames: list[SrtFrame], font: Font, cfg: Config, osd_type: int, video_path: pathlib.Path) -> None:
@@ -159,39 +128,6 @@ def run_ffmpeg_stdin(cfg: Config, video_path: pathlib.Path, out_path: pathlib.Pa
         .overwrite_output() \
         .run_async(pipe_stdin=True)
 
-
-def read_srt_frames(srt_path: pathlib.Path, verbatim: bool, fps: int) -> list[SrtFrame]:
-    frames_per_ms = (1 / fps) * 1000
-
-    if verbatim:
-        print(f'Loading srt data from {srt_path}')
-    subs = pysrt.open(srt_path)
-
-    result = []
-    pattern = r'[-+]?\d*\.\d+|\d+'
-
-    for sub in subs:
-        items = sub.text.split(' ')
-        d = {}
-        for item in items:
-            name, val = item.lower().split(':')
-            val = re.search(pattern, val).group()
-            try:
-                val = int(val)
-            except ValueError:
-                val = float(val)
-            d[name] = val
-
-        ms = time_to_milliseconds(sub.start.to_time())
-        frame_idx = int(ms // frames_per_ms)
-        d['start_time'] = ms
-        d['idx'] = frame_idx
-        frame = SrtFrame(**d)
-        result.append(frame)
-
-    return result
-
-
 def osd_frame_idx(frames: list[Frame], frame_no: int) -> int | None:
     """
     Finds frame in list of osd frames that is inside range
@@ -212,16 +148,6 @@ def osd_frame_idx(frames: list[Frame], frame_no: int) -> int | None:
             left = middle + 1
 
     return None
-
-
-def decode_system(firmware: int) -> str:
-    if firmware == FW_BETAFL:
-        return 'bf'
-    
-    if firmware == FW_ARDU:
-        return 'ardu'
-    
-    return 'inav'
 
 
 def main(args: Config):
@@ -263,7 +189,7 @@ def main(args: Config):
         frames = read_ws_osd_frames(osd_path, args.verbatim, args)
 
     print(f"loading fonts from: {args.font}")
-    system_name = decode_system(firmware)
+    system_name = decode_system_str(firmware)
     hd = '_hd' if args.hd else ''
     font_file_name = pathlib.Path(args.font) / f'font_{system_name}{hd}'
 
