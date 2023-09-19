@@ -2,6 +2,7 @@ import flet as ft
 from flet import AlertDialog
 import base64
 from io import BytesIO
+import time
 
 from .preview_panel import PreviewPanel
 from .data_panel import DataPanel
@@ -48,9 +49,19 @@ class OsdApp(ft.UserControl):
                 actions_alignment=ft.MainAxisAlignment.END
             )
 
+        self.render_dialog = AlertDialog(
+                modal=True,
+                title=ft.Text("Info"),
+                content=ft.Text("Render in progress"),
+                actions=[
+                ],
+                actions_alignment=ft.MainAxisAlignment.END
+            )
+        
     def close_dlg(self, e):
         self.err_dialog.open = False
         self.info_dialog.open = False
+        self.render_dialog.open = False
         self.page.update()
 
     def on_info(self, msg: str) -> None:
@@ -63,6 +74,11 @@ class OsdApp(ft.UserControl):
         self.err_dialog.content.value = str(msg)
         self.err_dialog.open = True
         self.page.dialog = self.err_dialog
+        self.page.update()
+
+    def on_render(self):
+        self.render_dialog.open = True
+        self.page.dialog = self.render_dialog
         self.page.update()
 
     def render_test_frame(self, e: ft.ControlEvent) -> None:
@@ -84,6 +100,8 @@ class OsdApp(ft.UserControl):
     def render(self, e: ft.ControlEvent):
         if not (self.osd_state.osd_type and self.osd_state.font and self.osd_state.frames):
             return
+
+        self.on_render()
 
         cls = get_renderer(self.osd_state.osd_type)
         renderer = cls(font=self.osd_state.font, cfg=self.osd_state.cfg, osd_type=self.osd_state.osd_type, frames=self.osd_state.frames, srt_frames=self.osd_state.srt_frames, reset_cache=True)
@@ -111,7 +129,9 @@ class OsdApp(ft.UserControl):
         # Wait for ffmpeg to finish
         process.wait()
 
-        self.on_info('Rendering complete')
+        self.close_dlg(None)
+        time.sleep(0)
+        # self.on_info('Rendering complete')
 
     def build(self):
         return ft.Row(

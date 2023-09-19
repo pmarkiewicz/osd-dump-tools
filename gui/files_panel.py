@@ -117,12 +117,11 @@ class FilesPanel(ft.UserControl):
         self.update()
 
     def pick_out_file_result(self, e: ft.FilePickerResultEvent):
-        if not e.files:
+        if not e.path:
             return
         
-        fn = e.files[0].path
-        self.out_file.value = fn
-        self.osd_state.out_path = fn
+        self.out_file.value = e.path
+        self.osd_state.out_path = e.path
         self.osd_state.update_out_info()
 
         self.on_change()
