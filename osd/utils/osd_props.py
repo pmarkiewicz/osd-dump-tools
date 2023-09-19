@@ -35,7 +35,7 @@ def detect_system(osd_path: pathlib.Path, verbatim: bool = False) -> tuple :
     sys.exit(1)
 
 
-def decode_system_str(firmware: int) -> str:
+def decode_fw_str(firmware: int) -> str:
     if firmware == FW_BETAFL:
         return 'bf'
     
@@ -43,3 +43,10 @@ def decode_system_str(firmware: int) -> str:
         return 'ardu'
     
     return 'inav'
+
+
+def decode_system_str(system: int) -> str:
+    if system == OSD_TYPE_DJI:
+        return 'DJI'
+    
+    return 'WS'

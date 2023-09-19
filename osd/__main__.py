@@ -5,28 +5,21 @@ import sys
 import time
 from configparser import ConfigParser
 from subprocess import Popen
-import re
 
-import pysrt
-import ffmpeg
 
-from .utils.osd_props import detect_system, decode_system_str
-from .render import DjiRenderer, WsRenderer, get_renderer
+from .utils.osd_props import detect_system, decode_fw_str
+from .render import get_renderer
+from .run_ffmpeg import run_ffmpeg_stdin
 from .frame import Frame, SrtFrame
 from .font import Font
 from .const import CONFIG_FILE_NAME, OSD_TYPE_DJI
 from .config import Config
-from .utils.codecs import find_codec
 from .utils.find_slot import find_slots
-from .utils.video_props import get_video_properties, VideoProperties
-from .utils.time_to_ms import time_to_milliseconds
+from .utils.video_props import get_video_properties
 from .utils.srt import read_srt_frames
 from .cmd_line import build_cmd_line_parser
-from .dji import read_dji_osd_frames, read_dji_osd_header
-from .dji_file_header import DJIFileHeader
+from .dji import read_dji_osd_frames
 from .ws import read_ws_osd_frames
-
-
 
 
 def render_test_frame(frames: list[Frame], srt_frames: list[SrtFrame], font: Font, cfg: Config, osd_type: int, video_path: pathlib.Path) -> None:
@@ -83,50 +76,6 @@ def render_frames(frames: list[Frame], srt_frames: list[SrtFrame], font: Font, c
     # Wait for ffmpeg to finish
     process.wait()
 
-
-def run_ffmpeg_stdin(cfg: Config, video_path: pathlib.Path, out_path: pathlib.Path) -> Popen[bytes]:
-    codec = find_codec()
-    if not codec:
-        print('No ffmpeg codec found')
-        sys.exit(2)
-
-    if cfg.verbatim:
-        print(f'Found a working codec: {codec}')
-
-    frame_overlay = ffmpeg.input('pipe:', framerate=60, thread_queue_size=65536, vcodec="png")  # format="image2pipe", 
-    video = ffmpeg.input(str(video_path), thread_queue_size=4096, hwaccel="auto")
-
-    out_size = {"w": cfg.target_width, "h": cfg.target_height}
-
-    output_params = {
-        'video_bitrate': f"{cfg.bitrate}M",
-        'c:v': codec,
-        'acodec': 'copy',
-    }
-
-    # from https://ffmpeg.org/faq.html#Which-are-good-parameters-for-encoding-high-quality-MPEG_002d4_003f
-    hq_output = {
-        'mbd': 'rd',
-        'flags': '+mv4+aic',
-        'trellis': 2,
-        'cmp': 2,
-        'subcmp': 2,
-        'g': 300,
-        'bf': 2,
-    }
-
-    if args.hq:
-        output_params.update(hq_output)
-
-    return video.filter("scale", **out_size, force_original_aspect_ratio=1) \
-        .filter("pad", **out_size, x=-1, y=-1, color="black") \
-        .overlay(frame_overlay, x=0, y=0) \
-        .output(str(out_path), **output_params) \
-        .global_args('-loglevel', 'info' if args.ffmpeg_verbatim else 'error') \
-        .global_args('-stats') \
-        .global_args('-hide_banner') \
-        .overwrite_output() \
-        .run_async(pipe_stdin=True)
 
 def osd_frame_idx(frames: list[Frame], frame_no: int) -> int | None:
     """
@@ -189,7 +138,7 @@ def main(args: Config):
         frames = read_ws_osd_frames(osd_path, args.verbatim, args)
 
     print(f"loading fonts from: {args.font}")
-    system_name = decode_system_str(firmware)
+    system_name = decode_fw_str(firmware)
     hd = '_hd' if args.hd else ''
     font_file_name = pathlib.Path(args.font) / f'font_{system_name}{hd}'
 

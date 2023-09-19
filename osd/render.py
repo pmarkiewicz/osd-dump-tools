@@ -24,7 +24,10 @@ class BaseRenderer:
 
     _items_cache = HiddenItemsCache()
 
-    def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame]) -> None:
+    def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame], reset_cache: bool = False) -> None:
+        if reset_cache:
+            self._items_cache = HiddenItemsCache()
+
         self.font = font
         self.cfg = cfg
         self.osd_type = osd_type
@@ -222,7 +225,7 @@ class BaseRenderer:
         if self.cfg.overlay_img:
             osd_img.paste(self.cfg.overlay_img, self.cfg.overlay_location)
 
-        if srt_frame_idx:
+        if srt_frame_idx and self.srt_frames:
             srt_frame = self.srt_frames[srt_frame_idx]
             self.draw_srt(srt_frame, osd_img)
 
@@ -232,8 +235,8 @@ class BaseRenderer:
 
 
 class DjiRenderer(BaseRenderer):
-    def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame]) -> None:
-        super().__init__(font, cfg, osd_type, frames, srt_frames)
+    def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame], reset_cache: bool = False) -> None:
+        super().__init__(font, cfg, osd_type, frames, srt_frames, reset_cache)
         self.internal_width, self.internal_height = INTERNAL_W_H_DJI
 
     def char_reader(self, frame: Frame, x: int, y: int) -> str:
@@ -241,8 +244,8 @@ class DjiRenderer(BaseRenderer):
     
 
 class WsRenderer(BaseRenderer):
-    def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame]) -> None:
-        super().__init__(font, cfg, osd_type, frames, srt_frames)
+    def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame], reset_cache: bool = False) -> None:
+        super().__init__(font, cfg, osd_type, frames, srt_frames, reset_cache)
         self.internal_width, self.internal_height = INTERNAL_W_H_WS
 
     def char_reader(self, frame: Frame, x: int, y: int) -> str:

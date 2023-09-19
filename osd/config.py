@@ -5,7 +5,7 @@ import pathlib
 import sys
 from configparser import ConfigParser
 from PIL import Image, UnidentifiedImageError
-from .const import DEFAULT_SECTION, SD_RESOLUTION_LIMIT, MAX_DISPLAY_X, MAX_DISPLAY_Y, FW_ARDU, HD_TILE_WIDTH
+from .const import DEFAULT_SECTION, FW_ARDU, HD_TILE_WIDTH
 from .dji_file_header import DJIFileHeader
 from .ws_file_header import WSFileHeader
 
@@ -15,7 +15,7 @@ class Config:
         ('font', str), ('bitrate', int), ('ffmpeg_verbatim', bool),
         ('testrun', bool), ('testframe', int), ('hq', bool),
         ('hide_gps', bool), ('hide_alt', bool), ('hide_dist', bool), ('verbatim', bool),
-        ('overlay', str), ('out_resolution', str), ('srt', str),
+        ('overlay', str), ('out_resolution', str), ('srt', str), ('srt_start', str),
     )
 
     def __init__(self, cfg: ConfigParser):
@@ -23,7 +23,7 @@ class Config:
 
         self.font : str = ''
         self.bitrate: int = 25
-        self.out_resolution: str = 'fhd'
+        self.out_resolution: str = 'hd'
         self.narrow: bool = False
         self.hq: bool = False
         self.hide_gps: bool = False
@@ -37,6 +37,7 @@ class Config:
         self.osd_resolution: str = '60x22'
         self.srt = ''
         self.overlay = None
+        self.srt_start = None
 
         self.hd: bool = True
         self.display_width: int = -1
@@ -53,7 +54,8 @@ class Config:
             'bitrate': 'BR:{:.1f}',
         }
 
-        self.update_cfg(cfg[DEFAULT_SECTION])
+        self.update_cfg(cfg)
+        self._calculate_video_resolution()
 
     def set_value_from_cfg(self, cfg: ConfigParser, name: str, t: type) -> None:
         try:
@@ -66,6 +68,7 @@ class Config:
             pass
 
     def update_cfg(self, cfg) -> None:
+        cfg = cfg[DEFAULT_SECTION]
         for name, typ in self.params:
             self.set_value_from_cfg(cfg, name, typ)
 
@@ -134,6 +137,23 @@ class Config:
             self.overlay_img = img
             self.overlay_location = (x, y,)
 
+    def update_srt_start(self):
+        if self.srt_start:
+            s = self.srt_start.replace('(', '').replace(')', '')
+            parts = s.split(',')
+            if len(parts) != 2:
+                print('Incorrect no of params for overlay')
+                sys.exit(4)
+
+            try:
+                x = int(parts[0].strip())
+                y = int(parts[1].strip())
+            except ValueError:
+                print('Incorrect overlay coordinates')
+                sys.exit(4)
+
+            self.srt_start_location = (x, y,)
+
     def calculate(self):
         """
         Calculate config parameters based on other values
@@ -141,6 +161,7 @@ class Config:
         self._calculate_video_resolution()
         self._update_srt()
         self._update_overlay()
+        self.update_srt_start()
 
     def update_from_dji(self, dji_file_header: DJIFileHeader) -> None:
         self.display_width = dji_file_header.char_width
@@ -160,3 +181,7 @@ class Config:
     def update_narrow(self, width: int, height: int) -> None:
         if (height / width) >= 0.70:
             self.narrow = True
+
+    def update_video_resolution(self, resolution: str) -> None:
+        self.out_resolution = resolution
+        self._calculate_video_resolution()
