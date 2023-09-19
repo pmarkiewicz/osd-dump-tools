@@ -1,16 +1,20 @@
+# gui added
+
+After installation as described below just use run.cmd on windows to start program.
+GUI is simple, not very well tested now and requires improvement.
+Progress of video rendering may not be visible (should be visible in terminal window)
+
 # osd-dump tools
 
 Updated version, no more files saved on disk, everything is in memory.
 
 Overlays dji and walksnail recordings over video files with data from srt files.
 Walksnail is decoded automatically and rendered as full hd, same fonts as for dji are used.
-At this moment different firmwares doesn't select proper fonts. 
-Current walksnail limitation is only 60fps and only full hd.
 
 ### Requirements
 
 - Windows as described below or [use WSL](https://learn.microsoft.com/en-us/windows/wsl/install).
-- Python 3.8+ is required.
+- Python 3.11+ is required.
 - ffmpeg is required.
 
   ```shell
