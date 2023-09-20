@@ -28,8 +28,8 @@ class PreviewPanel(ft.Column):
         self.alignment = ft.MainAxisAlignment.START
         self.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         self.controls = [
-            self.preview,
-            self.no_preview
+            ft.Container(margin=0, padding=0, alignment=ft.alignment.center, bgcolor=ft.colors.BLUE_GREY_100, content=self.preview),
+            ft.Container(margin=0, padding=0, alignment=ft.alignment.center, content=self.no_preview),
         ]
 
     def set_preview(self, img_base64):
