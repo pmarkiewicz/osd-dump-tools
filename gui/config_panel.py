@@ -1,4 +1,5 @@
 import flet as ft
+import json
 
 from .utils import cut_path
 from .osd_state import OsdState, Events
@@ -111,8 +112,9 @@ class ConfigPanel(ft.Column):
         if not e.data:
             return
         
-        self.font_folder.value = cut_path(e.data)
-        self.osd_state.font_load(self.font_folder.value)
+        d = json.loads(e.data)
+        self.font_folder.value = cut_path(d['path'])
+        self.osd_state.font_load(d['path'])
 
         self.on_change()
         self.update()
