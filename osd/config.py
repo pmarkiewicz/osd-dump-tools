@@ -15,7 +15,8 @@ class Config:
         ('font', str), ('bitrate', int), ('ffmpeg_verbatim', bool),
         ('testrun', bool), ('testframe', int), ('hq', bool),
         ('hide_gps', bool), ('hide_alt', bool), ('hide_dist', bool), ('verbatim', bool),
-        ('overlay', str), ('out_resolution', str), ('srt', str), ('srt_start', str),
+        ('overlay', str), ('out_resolution', str), 
+        ('srt', str), ('srt_start', str), ('srt_font_scale', float)
     )
 
     def __init__(self, cfg: ConfigParser):
@@ -45,7 +46,7 @@ class Config:
         self.overlay_location = None
         self.overlay_img = None
         self.srt_data = []
-        self.srt_font_scale = 0.7
+        self.srt_font_scale: float = 0.7
         self.srt_start_location = (1, -1,)
         self.srt_fmt = {
             'signal': '\x27{:n}',
