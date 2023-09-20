@@ -25,7 +25,7 @@ class PreviewPanel(ft.Column):
 
         self.expand = 2
         self.spacing = 5
-        self.alignment = ft.MainAxisAlignment.CENTER
+        self.alignment = ft.MainAxisAlignment.START
         self.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         self.controls = [
             self.preview,
@@ -44,7 +44,7 @@ class PreviewPanel(ft.Column):
         self.update()
 
     def _create_empty_img(self):
-        img = Image.new("RGB", (1, 1))
+        img = Image.new("RGB", (5, 5), color=(200, 0, 0,))
         membuf = BytesIO()
         img.save(membuf, format="png")
         membuf.seek(0)

@@ -1,6 +1,6 @@
 import flet as ft
-import pathlib
 
+from .utils import cut_path
 from .osd_state import OsdState, Events
 
 
@@ -24,11 +24,12 @@ class ConfigPanel(ft.Column):
         self.srt_delay = ft.Checkbox(label='delay', value='delay' in srt_display, on_change=self.update_srt)
         self.srt_bitrate = ft.Checkbox(label='bitrate', value='bitrate' in srt_display, on_change=self.update_srt)
 
-        self.out_bitrate_txt = ft.Text('Output bitrate')
+        self.out_bitrate_txt = ft.Text('Out bitrate:')
         self.out_bitrate = ft.Slider(min=25, max=100, value=osd_state.bitrate, divisions=15, label="{value}", expand=True, on_change_end=self.update_bitrate)
         self._update_bitrate(osd_state.bitrate)
 
-        self.font_folder = ft.TextField(hint_text='font folder...', expand=True, read_only=True, value=osd_state.font_folder)
+        self.font_folder = ft.TextField(hint_text='font folder...', expand=True, read_only=True, 
+                                        value=cut_path(osd_state.font_folder), text_size=12)
         self.pick_font_file_dialog = ft.FilePicker(on_result=self.pick_out_font_result)
 
         self.output_resolution = ft.RadioGroup(
@@ -54,9 +55,9 @@ class ConfigPanel(ft.Column):
                 spacing=10, 
                 controls=[
                     self.font_folder,
-                    ft.FloatingActionButton(icon=ft.icons.FILE_OPEN,
-                        on_click=lambda _: self.pick_font_file_dialog.pick_files(
-                            allow_multiple=False, allowed_extensions=['bin'], dialog_title='Open any font file',
+                    ft.IconButton(icon=ft.icons.FILE_OPEN,
+                        on_click=lambda _: self.pick_font_file_dialog.get_directory_path(
+                            #allow_multiple=False, allowed_extensions=['bin'], dialog_title='Open any font file',
                         )
                     ),
                 ]
@@ -71,7 +72,7 @@ class ConfigPanel(ft.Column):
             ft.Row(
                 spacing=10,
                 controls=[
-                    ft.Text('Output resolution'),
+                    ft.Text('Out resolution'),
                     self.output_resolution,
                 ]
             ),
@@ -107,12 +108,10 @@ class ConfigPanel(ft.Column):
         self.out_bitrate_txt.value = f'Output bitrate {value}'        
     
     def pick_out_font_result(self, e: ft.FilePickerResultEvent):
-        if not e.files:
+        if not e.data:
             return
         
-        fn = pathlib.Path(e.files[0].path)
-
-        self.font_folder.value = fn.parent
+        self.font_folder.value = cut_path(e.data)
         self.osd_state.font_load(self.font_folder.value)
 
         self.on_change()

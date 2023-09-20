@@ -2,6 +2,7 @@ import flet as ft
 import pathlib
 
 from .osd_state import OsdState, Events
+from .utils import cut_path
 
 
 class FilesPanel(ft.UserControl):
@@ -21,10 +22,10 @@ class FilesPanel(ft.UserControl):
         self.pick_srt_file_dialog = ft.FilePicker(on_result=self.pick_srt_file_result)
         self.pick_out_file_dialog = ft.FilePicker(on_result=self.pick_out_file_result)
 
-        self.video_file = ft.TextField(hint_text='video file...', expand=True, read_only=True)
-        self.osd_file = ft.TextField(hint_text='osd file...', expand=True, read_only=True)
-        self.srt_file = ft.TextField(hint_text='srt file...', expand=True, read_only=True)
-        self.out_file = ft.TextField(hint_text='output file...', expand=True, read_only=True)
+        self.video_file = ft.TextField(hint_text='video file...', expand=True, read_only=True, text_size=12)
+        self.osd_file = ft.TextField(hint_text='osd file...', expand=True, read_only=True, text_size=12)
+        self.srt_file = ft.TextField(hint_text='srt file...', expand=True, read_only=True, text_size=12)
+        self.out_file = ft.TextField(hint_text='output file...', expand=True, read_only=True, text_size=12)
 
     def build(self):
         return ft.Column(controls=[
@@ -32,7 +33,7 @@ class FilesPanel(ft.UserControl):
                 spacing=10, 
                 controls=[
                     self.video_file,
-                    ft.FloatingActionButton(
+                    ft.IconButton(
                         icon=ft.icons.FILE_OPEN,
                         on_click=lambda _: self.pick_video_file_dialog.pick_files(
                             allow_multiple=False, allowed_extensions=['mp4'], dialog_title='Open video file',
@@ -44,7 +45,7 @@ class FilesPanel(ft.UserControl):
             ft.Row(
                 controls=[
                     self.osd_file,
-                    ft.FloatingActionButton(icon=ft.icons.FILE_OPEN,
+                    ft.IconButton(icon=ft.icons.FILE_OPEN,
                         on_click=lambda _: self.pick_osd_file_dialog.pick_files(
                             allow_multiple=False, allowed_extensions=['osd'], dialog_title='Open osd file',
                         )
@@ -54,7 +55,7 @@ class FilesPanel(ft.UserControl):
             ft.Row(
                 controls=[
                     self.srt_file,
-                    ft.FloatingActionButton(icon=ft.icons.FILE_OPEN,
+                    ft.IconButton(icon=ft.icons.FILE_OPEN,
                         on_click=lambda _: self.pick_srt_file_dialog.pick_files(
                             allow_multiple=False, allowed_extensions=['srt'], dialog_title='Open srt file',
                         )
@@ -64,7 +65,7 @@ class FilesPanel(ft.UserControl):
             ft.Row(
                 controls=[
                     self.out_file,
-                    ft.FloatingActionButton(icon=ft.icons.FILE_OPEN,
+                    ft.IconButton(icon=ft.icons.FILE_OPEN,
                         on_click=lambda _: self.pick_out_file_dialog.save_file(
                             allowed_extensions=['mp4'], 
                         )
@@ -78,23 +79,6 @@ class FilesPanel(ft.UserControl):
 
         ])
 
-    def cut_path(self, path, max_size=5):
-        # https://codereview.stackexchange.com/questions/169217/path-shortener-for-gui-application
-        if not path:
-            return path
-
-        parts = list(pathlib.PurePath(path).parts)
-
-        path = pathlib.PurePath(parts[0])
-        for part in parts[1:-2]:
-            path /= part
-            if len(str(path)) >= max_size:
-                path /= '...'
-                break
-        if len(parts) > 1:
-            path /= f'{parts[-2]}/{parts[-1]}'
-        return path
-
     def pick_video_file_result(self, e: ft.FilePickerResultEvent):
         if not e.files:
             return
@@ -103,10 +87,10 @@ class FilesPanel(ft.UserControl):
 
         self.osd_state.video_load(fn)
 
-        self.video_file.value = self.cut_path(self.osd_state._video_path)
-        self.osd_file.value = self.cut_path(self.osd_state._osd_path)
-        self.srt_file.value = self.cut_path(self.osd_state._srt_path)
-        self.out_file.value = self.cut_path(self.osd_state._out_path)
+        self.video_file.value = cut_path(self.osd_state._video_path)
+        self.osd_file.value = cut_path(self.osd_state._osd_path)
+        self.srt_file.value = cut_path(self.osd_state._srt_path)
+        self.out_file.value = cut_path(self.osd_state._out_path)
         self.on_change()
         self.update()
 
@@ -115,7 +99,7 @@ class FilesPanel(ft.UserControl):
             return
         
         fn = e.files[0].path
-        self.osd_file.value = fn
+        self.osd_file.value = cut_path(fn)
         self.osd_state.osd_path = fn
         self.osd_state.update_osd_info()
 
@@ -127,7 +111,7 @@ class FilesPanel(ft.UserControl):
             return
         
         fn = e.files[0].path
-        self.srt_file.value = fn
+        self.srt_file.value = cut_path(fn)
         self.osd_state.srt_path = fn
         self.osd_state.update_srt_info()
 
@@ -138,7 +122,7 @@ class FilesPanel(ft.UserControl):
         if not e.path:
             return
         
-        self.out_file.value = e.path
+        self.out_file.value = cut_path(e.path)
         self.osd_state.out_path = e.path
         self.osd_state.update_out_info()
 
