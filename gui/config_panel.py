@@ -5,10 +5,11 @@ from .osd_state import OsdState, Events
 
 
 class ConfigPanel(ft.Column):
-    def __init__(self, page: ft.Page, osd_state: OsdState, events: Events, *args, **kwargs):
+    def __init__(self, page: ft.Page, osd_state: OsdState, events: Events, on_change, *args, **kwargs):
         self.osd_state = osd_state
         self.events = events
         self.page = page
+        self.on_change = on_change
 
         self.hq_profile = ft.Checkbox(label='High quality profile for output (slower)', value=osd_state.hq, on_change=self.update_hq_profile)
 
@@ -114,6 +115,7 @@ class ConfigPanel(ft.Column):
         self.font_folder.value = fn.parent
         self.osd_state.font_load(self.font_folder.value)
 
+        self.on_change()
         self.update()
 
     def out_resultion_change(self, e: ft.ControlEvent):

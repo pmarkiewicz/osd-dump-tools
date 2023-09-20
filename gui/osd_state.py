@@ -54,6 +54,7 @@ class OsdState:
 
             self.page.pubsub.send_all_on_topic('font', f'Font loaded {font_file_name}')
             self.update_ready()
+            self.update_ini()
 
             return
 

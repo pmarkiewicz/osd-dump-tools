@@ -21,7 +21,7 @@ class DataPanel(ft.Column):
 
         self.files_panel = FilesPanel(page, self.osd_state, self.events, self.on_change)
         self.info_panel = InfoPanel(page, self.osd_state, self.events)
-        self.config_panel = ConfigPanel(page, self.osd_state, self.events)
+        self.config_panel = ConfigPanel(page, self.osd_state, self.events, self.on_change)
 
         self.render_btn = ft.FilledButton(icon=ft.icons.FILE_OPEN_OUTLINED, text='Render', expand=1, disabled=True, on_click=self.events.render)
         self.render_test_btn = ft.FilledButton(icon=ft.icons.FILE_OPEN_OUTLINED, text='Render test frame', expand=1, on_click=self.events.render_test_frame, disabled=True)

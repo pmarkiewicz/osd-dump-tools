@@ -1,4 +1,5 @@
 import flet as ft
+import pathlib
 
 from .osd_state import OsdState, Events
 
@@ -77,6 +78,23 @@ class FilesPanel(ft.UserControl):
 
         ])
 
+    def cut_path(self, path, max_size=5):
+        # https://codereview.stackexchange.com/questions/169217/path-shortener-for-gui-application
+        if not path:
+            return path
+
+        parts = list(pathlib.PurePath(path).parts)
+
+        path = pathlib.PurePath(parts[0])
+        for part in parts[1:-2]:
+            path /= part
+            if len(str(path)) >= max_size:
+                path /= '...'
+                break
+        if len(parts) > 1:
+            path /= f'{parts[-2]}/{parts[-1]}'
+        return path
+
     def pick_video_file_result(self, e: ft.FilePickerResultEvent):
         if not e.files:
             return
@@ -85,10 +103,10 @@ class FilesPanel(ft.UserControl):
 
         self.osd_state.video_load(fn)
 
-        self.video_file.value = self.osd_state._video_path
-        self.osd_file.value = self.osd_state._osd_path
-        self.srt_file.value = self.osd_state._srt_path
-        self.out_file.value = self.osd_state._out_path
+        self.video_file.value = self.cut_path(self.osd_state._video_path)
+        self.osd_file.value = self.cut_path(self.osd_state._osd_path)
+        self.srt_file.value = self.cut_path(self.osd_state._srt_path)
+        self.out_file.value = self.cut_path(self.osd_state._out_path)
         self.on_change()
         self.update()
 
