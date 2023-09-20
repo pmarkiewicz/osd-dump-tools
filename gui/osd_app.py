@@ -57,7 +57,7 @@ class OsdApp(ft.UserControl):
                 ],
                 actions_alignment=ft.MainAxisAlignment.END
             )
-        
+
     def close_dlg(self, e):
         self.err_dialog.open = False
         self.info_dialog.open = False

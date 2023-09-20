@@ -43,7 +43,6 @@ class DataPanel(ft.Column):
             ft.Container(margin=0, padding=2, alignment=ft.alignment.top_left, content=self.files_panel),
             ft.Container(margin=0, padding=0, alignment=ft.alignment.top_left, content=self.info_panel),
             ft.Container(margin=0, padding=0, alignment=ft.alignment.top_left, content=self.config_panel),
-            #ft.Divider(height=2, thickness=1, color=ft.colors.BLUE_GREY_500),
             ft.Container(margin=0, padding=0, alignment=ft.alignment.top_left, content=ft.Row(
                 alignment=ft.MainAxisAlignment.CENTER,
                 controls=[

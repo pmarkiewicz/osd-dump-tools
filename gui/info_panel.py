@@ -25,7 +25,6 @@ class InfoPanel(ft.Column):
         self.wrap = False
         self.tight = True
 
-
         self.controls = [
             self.video_info,
             self.osd_info,
@@ -48,4 +47,3 @@ class InfoPanel(ft.Column):
     def on_font_loaded(self, topic: str, msg: str):
         self.font_info.value = msg
         self.font_info.update()
-

@@ -55,11 +55,11 @@ class ConfigPanel(ft.Column):
         self.controls = [
             self.pick_font_file_dialog,
             ft.Row(
-                spacing=10, 
+                spacing=10,
                 controls=[
                     self.font_folder,
                     ft.IconButton(icon=ft.icons.FILE_OPEN,
-                        on_click=lambda _: self.pick_font_file_dialog.get_directory_path()
+                                  on_click=lambda _: self.pick_font_file_dialog.get_directory_path()
                     ),
                 ]
             ),
@@ -72,6 +72,7 @@ class ConfigPanel(ft.Column):
             ),
             ft.Row(
                 spacing=10,
+                wrap=True,
                 controls=[
                     ft.Text('Out resolution'),
                     self.output_resolution,
@@ -106,12 +107,12 @@ class ConfigPanel(ft.Column):
         self.out_bitrate_txt.update()
 
     def _update_bitrate(self, value: int):
-        self.out_bitrate_txt.value = f'Output bitrate {value}'        
-    
+        self.out_bitrate_txt.value = f'Output bitrate {value}'
+
     def pick_out_font_result(self, e: ft.FilePickerResultEvent):
         if not e.data:
             return
-        
+
         d = json.loads(e.data)
         self.font_folder.value = cut_path(d['path'])
         self.osd_state.font_load(d['path'])
@@ -124,13 +125,13 @@ class ConfigPanel(ft.Column):
 
     def update_hide_gps(self, e: ft.ControlEvent) -> None:
         self.osd_state.hide_gps = e.data == 'true'
-    
+
     def update_hide_dist(self, e: ft.ControlEvent) -> None:
         self.osd_state.hide_dist = e.data == 'true'
-    
+
     def update_hide_alt(self, e: ft.ControlEvent) -> None:
         self.osd_state.hide_alt = e.data == 'true'
-        
+
     def update_srt(self, e: ft.ControlEvent) -> None:
         srt_disp = []
         if self.srt_bitrate.value:
