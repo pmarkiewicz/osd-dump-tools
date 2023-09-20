@@ -6,3 +6,7 @@ venv
 *.pyc
 .vscode
 *.srt
+build/*
+dist*
+run.spec
+.DS_Store
