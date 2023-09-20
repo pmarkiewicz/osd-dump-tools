@@ -47,7 +47,9 @@ class ConfigPanel(ft.Column):
         super().__init__(*args, **kwargs)
         self.spacing = 5
         self.alignment = ft.MainAxisAlignment.START
+        self.horizontal_alignment = ft.CrossAxisAlignment.START
         self.wrap = False
+        self.tight = True
 
         self.controls = [
             self.pick_font_file_dialog,
@@ -56,9 +58,7 @@ class ConfigPanel(ft.Column):
                 controls=[
                     self.font_folder,
                     ft.IconButton(icon=ft.icons.FILE_OPEN,
-                        on_click=lambda _: self.pick_font_file_dialog.get_directory_path(
-                            #allow_multiple=False, allowed_extensions=['bin'], dialog_title='Open any font file',
-                        )
+                        on_click=lambda _: self.pick_font_file_dialog.get_directory_path()
                     ),
                 ]
             ),

@@ -23,6 +23,8 @@ class InfoPanel(ft.Column):
         self.spacing = 5
         self.alignment = ft.MainAxisAlignment.START
         self.wrap = False
+        self.tight = True
+
 
         self.controls = [
             self.video_info,

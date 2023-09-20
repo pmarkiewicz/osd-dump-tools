@@ -19,6 +19,7 @@ class DataPanel(ft.Column):
         self.horizontal_alignment = ft.CrossAxisAlignment.START
         self.wrap = False
         self.expand = 1
+        self.tight = True
 
         self.files_panel = FilesPanel(page, self.osd_state, self.events, self.on_change, visible=True)
         self.info_panel = InfoPanel(page, self.osd_state, self.events, visible=True)
@@ -39,7 +40,7 @@ class DataPanel(ft.Column):
         self.controls = [
             self.navi,
             self.files_panel,
-            ft.Divider(height=9, thickness=3, color=ft.colors.GREEN_500),
+            #ft.Divider(height=9, thickness=3, color=ft.colors.GREEN_500),
             self.info_panel,
             self.config_panel,
             ft.Divider(height=9, thickness=3, color=ft.colors.GREEN_500),
