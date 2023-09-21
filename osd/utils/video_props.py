@@ -9,6 +9,9 @@ class VideoProperties:
     fps: int
     width: int
     height: int
+    frame_count: int
+    duration_min: int
+    duration_sec: int
 
 
 def get_video_properties(mp4_filename: pathlib.Path) -> VideoProperties:
@@ -18,7 +21,11 @@ def get_video_properties(mp4_filename: pathlib.Path) -> VideoProperties:
         fps = int(vcap.get(cv2.CAP_PROP_FPS))
         width  = int(vcap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(vcap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        return VideoProperties(fps, width, height)
+        frame_count = int(vcap.get(cv2.CAP_PROP_FRAME_COUNT))
+        duration = frame_count/fps
+        duration_min = int(duration / 60)
+        duration_sec = duration % 60
+        return VideoProperties(fps, width, height, frame_count, duration_min, duration_sec)
     
     except Exception as e:
         print(f"Cannot read fps from {mp4_filename}, {e}")

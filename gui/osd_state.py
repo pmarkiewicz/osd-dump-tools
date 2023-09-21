@@ -94,7 +94,7 @@ class OsdState:
 
     def update_video_info(self):
         self.video_props = get_video_properties(self._video_path)
-        video_info = f'Source video: {self.video_props.width}x{self.video_props.height} {self.video_props.fps}fps'
+        video_info = f'Source video: {self.video_props.width}x{self.video_props.height} {self.video_props.fps}fps {self.video_props.duration_min}:{self.video_props.duration_sec}'
         self.page.pubsub.send_all_on_topic('video loaded', video_info)
         self.update_ready()
 
