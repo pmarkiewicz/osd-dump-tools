@@ -15,6 +15,8 @@ from osd.utils.video_props import VideoProperties, get_video_properties
 from osd.utils.osd_props import detect_system, decode_fw_str, decode_system_str
 from osd.utils.srt import read_srt_frames
 
+from .utils import cut_path
+
 
 @dataclass
 class OsdState:
@@ -38,6 +40,19 @@ class OsdState:
     def __post_init__(self):
         pass
 
+    def reset(self):
+        self.osd_type: int = None
+        self.frames: list[Frame] = None
+        self.srt_frames: list[SrtFrame] = None
+        self.fw_name: str = None
+        self.video_props: VideoProperties = None
+        self.font: Font = None
+        self.osd_name: str = None
+        self._video_path: pathlib.Path = None
+        self._osd_path: pathlib.Path = None
+        self._srt_path: pathlib.Path = None
+        self._out_path: pathlib.Path = None
+        
     def font_load(self, path: str) -> None:
         self.cfg.font = path
         self._load_font()
@@ -50,9 +65,9 @@ class OsdState:
             try:
                 self.font = Font(font_file_name, self.cfg.hd, small_font_scale=self.cfg.srt_font_scale)
             except FileNotFoundError:
-                self.error_handler(f'Font file does not exisit "{font_file_name}"')
+                self.error_handler(f'Font file does not exisit "{cut_path(font_file_name)}"')
 
-            self.page.pubsub.send_all_on_topic('font', f'Font loaded {font_file_name}')
+            self.page.pubsub.send_all_on_topic('font', f'Font loaded {cut_path(font_file_name)}')
             self.update_ready()
             self.update_ini()
 
@@ -77,6 +92,7 @@ class OsdState:
     def update_srt_info(self):
         if not self._srt_path.exists():
             self.page.pubsub.send_all_on_topic('srt loaded', 'Srt not loaded')
+            self._srt_path = ''
         else:
             self.read_srt_frames()
             self.page.pubsub.send_all_on_topic('srt loaded', f'Srt loaded {len(self.srt_frames)} frames')

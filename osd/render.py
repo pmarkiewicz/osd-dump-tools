@@ -22,8 +22,6 @@ class HiddenItemsCache():
 class BaseRenderer:
     __slots__ = 'font', 'cfg', 'osd_type', 'frames', 'srt_frames', 'tile_width', 'tile_height', 'masking_tile', 'exclusions', 'display_width', 'display_height', 'final_img_size'
 
-    _items_cache = HiddenItemsCache()
-
     def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame], reset_cache: bool = False) -> None:
         if reset_cache:
             self._items_cache = HiddenItemsCache()
@@ -33,6 +31,7 @@ class BaseRenderer:
         self.osd_type = osd_type
         self.frames = frames
         self.srt_frames = srt_frames
+        self._items_cache = HiddenItemsCache()
 
         self.tile_width = HD_TILE_WIDTH
         self.tile_height = HD_TILE_HEIGHT 

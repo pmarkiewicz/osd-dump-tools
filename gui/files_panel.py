@@ -1,5 +1,4 @@
 import flet as ft
-import pathlib
 
 from .osd_state import OsdState, Events
 from .utils import cut_path
@@ -85,6 +84,8 @@ class FilesPanel(ft.UserControl):
         
         fn = e.files[0].path
 
+        self.reset()
+        self.osd_state.reset()
         self.osd_state.video_load(fn)
 
         self.video_file.value = cut_path(self.osd_state._video_path)
@@ -129,3 +130,9 @@ class FilesPanel(ft.UserControl):
         self.on_change()
         self.out_file.update()
 
+    def reset(self):
+        self.osd_state.out_path = '...'
+        self.osd_state.srt_path = '...'
+        self.osd_state.osd_path = '...'
+
+        self.update()
