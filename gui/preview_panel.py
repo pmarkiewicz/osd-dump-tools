@@ -25,7 +25,7 @@ class PreviewPanel(ft.Column):
 
         self.expand = 2
         self.spacing = 5
-        self.alignment = ft.MainAxisAlignment.CENTER
+        self.alignment = ft.MainAxisAlignment.START
         self.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         self.controls = [
             ft.Container(margin=0, padding=0, alignment=ft.alignment.center, bgcolor=ft.colors.BLUE_GREY_100, content=self.preview),
@@ -38,7 +38,7 @@ class PreviewPanel(ft.Column):
         self.no_preview.visible = False
         self.update()
 
-    def reset_preview(self, img_base64):
+    def reset_preview(self):
         self.preview.visible = False
         self.no_preview.visible = True
         self.update()

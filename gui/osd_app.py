@@ -23,8 +23,16 @@ class OsdApp(ft.UserControl):
         self.osd_state.error_handler = self.on_error
         self.osd_state.info_handler = self.on_info
 
+        self.alignment = ft.MainAxisAlignment.START
+        self.horizontal_alignment = ft.CrossAxisAlignment.START
+
         # TODO: get form config
-        self.events = Events(update=self.update, render=self.render, render_test_frame=self.render_test_frame)
+        self.events = Events(
+            update=self.update, 
+            render=self.render, 
+            render_test_frame=self.render_test_frame,
+            reset_preview=self.reset_preview,
+        )
 
         self.preview_panel = PreviewPanel(self.osd_state, self.events)
         self.data_panel = DataPanel(page, self.osd_state, self.events)
@@ -81,6 +89,9 @@ class OsdApp(ft.UserControl):
         self.page.dialog = self.render_dialog
         self.page.update()
 
+    def reset_preview(self):
+        self.preview_panel.reset_preview()
+
     def render_test_frame(self, e: ft.ControlEvent) -> None:
         if not (self.osd_state.osd_type and self.osd_state.font and self.osd_state.frames):
             return
@@ -135,7 +146,7 @@ class OsdApp(ft.UserControl):
 
     def build(self):
         return ft.Row(
-            alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+            alignment=ft.MainAxisAlignment.START,
             controls=[
                 self.data_panel,
                 ft.VerticalDivider(width=50, thickness=3, color=ft.colors.GREEN_500),

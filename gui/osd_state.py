@@ -283,3 +283,4 @@ class Events:
     update: Callable = None
     render: Callable = None
     render_test_frame: Callable = None
+    reset_preview: Callable = None

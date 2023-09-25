@@ -86,6 +86,7 @@ class FilesPanel(ft.UserControl):
 
         self.reset()
         self.osd_state.reset()
+        self.events.reset_preview()
         self.osd_state.video_load(fn)
 
         self.video_file.value = cut_path(self.osd_state._video_path)
