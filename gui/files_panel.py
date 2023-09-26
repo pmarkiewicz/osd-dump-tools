@@ -1,4 +1,5 @@
 import flet as ft
+import pathlib
 
 from .osd_state import OsdState, Events
 from .utils import cut_path
@@ -123,8 +124,13 @@ class FilesPanel(ft.UserControl):
         if not e.path:
             return
         
-        self.out_file.value = cut_path(e.path)
-        self.osd_state.out_path = e.path
+        out_path = pathlib.Path(e.path)
+
+        if out_path.suffix == '':
+            out_path = out_path.with_suffix('.mp4')
+
+        self.out_file.value = cut_path(out_path)
+        self.osd_state.out_path = out_path
         self.osd_state.update_out_info()
 
         self.on_change()
