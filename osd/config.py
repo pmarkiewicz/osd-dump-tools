@@ -16,7 +16,8 @@ class Config:
         ('testrun', bool), ('testframe', int), ('hq', bool),
         ('hide_gps', bool), ('hide_alt', bool), ('hide_dist', bool), ('verbatim', bool),
         ('overlay', str), ('out_resolution', str), 
-        ('srt', str), ('srt_start', str), ('srt_font_scale', float)
+        ('srt', str), ('srt_start', str), ('srt_font_scale', float), 
+        ('last_render_time', tuple[int, int]),
     )
 
     def __init__(self, cfg: ConfigParser):
@@ -39,6 +40,7 @@ class Config:
         self.srt = ''
         self.overlay = None
         self.srt_start = None
+        self.last_render_time: tuple[int, int] = None
 
         self.hd: bool = True
         self.display_width: int = -1
@@ -63,7 +65,9 @@ class Config:
             v = cfg[name]
             if t == bool:   # we need special handling
                 v = v.lower() not in ('false', 'no', '0')
-                
+            elif t == tuple[int, int]:
+                v = self.parse_int_tuple(v)
+
             setattr(self, name, t(v))
         except KeyError:
             pass
@@ -138,22 +142,29 @@ class Config:
             self.overlay_img = img
             self.overlay_location = (x, y,)
 
+    def parse_int_tuple(self, v: str) -> tuple[int, int]:
+        if not v:
+            return None
+        
+        s = v.replace('(', '').replace(')', '')
+        parts = s.split(',')
+        if len(parts) != 2:
+            return None
+
+        try:
+            x = int(parts[0].strip())
+            y = int(parts[1].strip())
+        except ValueError:
+            print('Incorrect overlay coordinates')
+            return None
+
+        return (x, y,)
+
     def update_srt_start(self):
-        if self.srt_start:
-            s = self.srt_start.replace('(', '').replace(')', '')
-            parts = s.split(',')
-            if len(parts) != 2:
-                print('Incorrect no of params for overlay')
-                sys.exit(4)
-
-            try:
-                x = int(parts[0].strip())
-                y = int(parts[1].strip())
-            except ValueError:
-                print('Incorrect overlay coordinates')
-                sys.exit(4)
-
-            self.srt_start_location = (x, y,)
+        self.srt_start_location = (-1, -1,)
+        t = self.parse_int_tuple(self.srt_start)
+        if t:
+            self.srt_start_location = t
 
     def calculate(self):
         """

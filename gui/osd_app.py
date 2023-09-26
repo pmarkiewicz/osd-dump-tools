@@ -32,6 +32,7 @@ class OsdApp(ft.UserControl):
             render=self.render, 
             render_test_frame=self.render_test_frame,
             reset_preview=self.reset_preview,
+            render_last_frame=self.render_last_frame
         )
 
         self.preview_panel = PreviewPanel(self.osd_state, self.events)
@@ -92,13 +93,22 @@ class OsdApp(ft.UserControl):
     def reset_preview(self):
         self.preview_panel.reset_preview()
 
-    def render_test_frame(self, e: ft.ControlEvent) -> None:
+    def render_last_frame(self, e: ft.ControlEvent = None) -> None:
         if not (self.osd_state.osd_type and self.osd_state.font and self.osd_state.frames):
             return
 
+        self._render_test_frame(-1, -1)
+
+    def render_test_frame(self, e: ft.ControlEvent = None) -> None:
+        if not (self.osd_state.osd_type and self.osd_state.font and self.osd_state.frames):
+            return
+
+        self._render_test_frame(50, 50)
+
+    def _render_test_frame(self, frame_idx: int, srt_frame_idx: int) -> None:
         cls = get_renderer(self.osd_state.osd_type)
         renderer = cls(font=self.osd_state.font, cfg=self.osd_state.cfg, osd_type=self.osd_state.osd_type, frames=self.osd_state.frames, srt_frames=self.osd_state.srt_frames, reset_cache=True)
-        img = renderer.render_test_frame(50, 50)
+        img = renderer.render_test_frame(frame_idx, srt_frame_idx)
 
         membuf = BytesIO()
         img.save(membuf, format="png")
@@ -117,6 +127,7 @@ class OsdApp(ft.UserControl):
         cls = get_renderer(self.osd_state.osd_type)
         renderer = cls(font=self.osd_state.font, cfg=self.osd_state.cfg, osd_type=self.osd_state.osd_type, frames=self.osd_state.frames, srt_frames=self.osd_state.srt_frames, reset_cache=True)
 
+        render_time_start = time.time()
         frames_idx_render = []
         if self.osd_state.srt_frames:
             srt_idxs = [srt.idx for srt in self.osd_state.srt_frames]
@@ -143,6 +154,9 @@ class OsdApp(ft.UserControl):
         self.close_dlg(None)
         time.sleep(0)
         # self.on_info('Rendering complete')
+
+        render_time = time.time() - render_time_start
+        self.osd_state.render_time(render_time)
 
     def build(self):
         return ft.Row(

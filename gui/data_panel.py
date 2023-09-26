@@ -26,7 +26,8 @@ class DataPanel(ft.Column):
         self.config_panel = ConfigPanel(page, self.osd_state, self.events, self.on_change, visible=False)
 
         self.render_btn = ft.FilledButton(icon=ft.icons.FILE_OPEN_OUTLINED, text='Render', expand=1, disabled=True, on_click=self.events.render)
-        self.render_test_btn = ft.FilledButton(icon=ft.icons.FILE_OPEN_OUTLINED, text='Render test frame', expand=1, on_click=self.events.render_test_frame, disabled=True)
+        self.render_test_btn = ft.FilledButton(icon=ft.icons.FILE_OPEN_OUTLINED, text='Test frame', expand=1, on_click=self.on_test, disabled=True)
+        self.render_last_btn = ft.FilledButton(icon=ft.icons.FILE_OPEN_OUTLINED, text='Last frame', expand=1, on_click=self.on_last, disabled=True)
 
         self.navi = ft.Tabs(
             selected_index=0,
@@ -48,13 +49,21 @@ class DataPanel(ft.Column):
                 controls=[
                     self.render_btn,
                     self.render_test_btn,
+                    self.render_last_btn,
                 ]
             )),
         ]
 
+    def on_test(self, _):
+        self.events.render_test_frame()
+
+    def on_last(self, _):
+        self.events.render_last_frame()
+
     def on_change(self):
         self.render_btn.disabled = not self.osd_state.is_render_ready
         self.render_test_btn.disabled = not self.osd_state.is_render_ready
+        self.render_last_btn.disabled = not self.osd_state.is_render_ready
         self.update()
 
     def on_tabs_changed(self, e: ft.ControlEvent):

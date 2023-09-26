@@ -110,7 +110,7 @@ class OsdState:
 
     def update_video_info(self):
         self.video_props = get_video_properties(self._video_path)
-        video_info = f'Source video: {self.video_props.width}x{self.video_props.height} {self.video_props.fps}fps {self.video_props.duration_min}:{self.video_props.duration_sec}'
+        video_info = f'Source video: {self.video_props.width}x{self.video_props.height} {self.video_props.fps}fps {self.video_props.duration_min}:{int(self.video_props.duration_sec)}'
         self.page.pubsub.send_all_on_topic('video loaded', video_info)
         self.update_ready()
 
@@ -133,6 +133,16 @@ class OsdState:
             self.frames = read_dji_osd_frames(self._osd_path, False, self.cfg)
         else:
             self.frames = read_ws_osd_frames(self._osd_path, False, self.cfg)
+
+    def render_time(self, tm: int) -> None:
+        self.cfg.last_render_time = (self.video_props.frame_count, int(tm))
+        self.update_ini()
+
+    def estimate_render_time(self):
+        if self.cfg.last_render_time:
+            return int(self.video_props.frame_count / self.cfg.last_render_time[0] * self.cfg.last_render_time[1])
+        
+        return None
 
     @property
     def video_resolution(self) -> tuple[int, int]:
@@ -259,6 +269,7 @@ class OsdState:
     def font_folder(self) -> bool:
         return self.cfg.font
 
+    # this should be config part
     def update_ini(self):
         config = {
             'hq': self.hq,
@@ -271,6 +282,9 @@ class OsdState:
             'srt_start': self.srt_start_location,
             'out_resolution': self.output_resolution,
         }
+        if self.cfg.last_render_time:
+            config['last_render_time'] = self.cfg.last_render_time
+
         parser = ConfigParser()
         parser.read_dict({DEFAULT_SECTION: config})
 
@@ -284,3 +298,4 @@ class Events:
     render: Callable = None
     render_test_frame: Callable = None
     reset_preview: Callable = None
+    render_last_frame: Callable = None
