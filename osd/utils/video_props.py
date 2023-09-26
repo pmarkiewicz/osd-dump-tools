@@ -22,7 +22,7 @@ def get_video_properties(mp4_filename: pathlib.Path) -> VideoProperties:
         width  = int(vcap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(vcap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         frame_count = int(vcap.get(cv2.CAP_PROP_FRAME_COUNT))
-        duration = frame_count/fps
+        duration = int(frame_count/fps)
         duration_min = int(duration / 60)
         duration_sec = duration % 60
         return VideoProperties(fps, width, height, frame_count, duration_min, duration_sec)

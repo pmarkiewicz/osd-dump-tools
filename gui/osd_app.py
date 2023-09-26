@@ -115,6 +115,7 @@ class OsdApp(ft.UserControl):
         cls = get_renderer(self.osd_state.osd_type)
         renderer = cls(font=self.osd_state.font, cfg=self.osd_state.cfg, osd_type=self.osd_state.osd_type, frames=self.osd_state.frames, srt_frames=self.osd_state.srt_frames, reset_cache=True)
 
+        render_time_start = time.time()
         frames_idx_render = []
         if self.osd_state.srt_frames:
             srt_idxs = [srt.idx for srt in self.osd_state.srt_frames]
@@ -141,6 +142,9 @@ class OsdApp(ft.UserControl):
         self.close_dlg(None)
         time.sleep(0)
         # self.on_info('Rendering complete')
+
+        render_time = time.time() - render_time_start
+        self.osd_state.render_time(render_time)
 
     def build(self):
         return ft.Row(

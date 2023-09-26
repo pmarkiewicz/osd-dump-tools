@@ -13,6 +13,7 @@ class InfoPanel(ft.Column):
         self.osd_info = ft.Text('No osd information')
         self.srt_info = ft.Text('No srt information')
         self.font_info = ft.Text('No font information')
+        self.render_info = ft.Text('No estimation')
 
         page.pubsub.subscribe_topic("video loaded", self.on_video_file_loaded)
         page.pubsub.subscribe_topic("osd loaded", self.on_osd_file_loaded)
@@ -30,10 +31,22 @@ class InfoPanel(ft.Column):
             self.osd_info,
             self.srt_info,
             self.font_info,
+            self.render_info,
         ]
 
+    # TODO: refactor nested if
     def on_video_file_loaded(self, topic: str, msg: str):
         self.video_info.value = msg
+        estimation = self.osd_state.estimate_render_time()
+        if estimation:
+            if int(estimation / 60) > 0:
+                estimation = int(estimation / 60)
+                self.render_info.value = f'Est render time: {estimation} mins'
+            else:
+                self.render_info.value = f'Est render time: {estimation} secs'
+        else:
+            self.render_info.value = 'No estimation'
+
         self.video_info.update()
 
     def on_osd_file_loaded(self, topic: str, msg: str):
