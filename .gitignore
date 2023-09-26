@@ -8,5 +8,5 @@ venv
 *.srt
 build/*
 dist*
-run.spec
+*.spec
 .DS_Store

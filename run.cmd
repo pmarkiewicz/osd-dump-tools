@@ -1,7 +1,7 @@
 if exist venv\ (call venv\scripts\activate)
 if exist .venv\ (call .venv\scripts\activate)
 
-python run.py
+python osd-tool.py
 
 deactivate
 pause
