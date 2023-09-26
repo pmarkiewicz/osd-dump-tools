@@ -24,7 +24,7 @@ class OsdApp(ft.UserControl):
         self.osd_state.info_handler = self.on_info
 
         # TODO: get form config
-        self.events = Events(update=self.update, render=self.render, render_test_frame=self.render_test_frame)
+        self.events = Events(update=self.update, render=self.render, render_test_frame=self.render_test_frame, render_last_frame=self.render_last_frame)
 
         self.preview_panel = PreviewPanel(self.osd_state, self.events)
         self.data_panel = DataPanel(page, self.osd_state, self.events)
@@ -81,13 +81,22 @@ class OsdApp(ft.UserControl):
         self.page.dialog = self.render_dialog
         self.page.update()
 
-    def render_test_frame(self, e: ft.ControlEvent) -> None:
+    def render_last_frame(self, e: ft.ControlEvent = None) -> None:
         if not (self.osd_state.osd_type and self.osd_state.font and self.osd_state.frames):
             return
 
+        self._render_test_frame(-1, -1)
+
+    def render_test_frame(self, e: ft.ControlEvent = None) -> None:
+        if not (self.osd_state.osd_type and self.osd_state.font and self.osd_state.frames):
+            return
+
+        self._render_test_frame(50, 50)
+
+    def _render_test_frame(self, frame_idx: int, srt_frame_idx: int) -> None:
         cls = get_renderer(self.osd_state.osd_type)
         renderer = cls(font=self.osd_state.font, cfg=self.osd_state.cfg, osd_type=self.osd_state.osd_type, frames=self.osd_state.frames, srt_frames=self.osd_state.srt_frames, reset_cache=True)
-        img = renderer.render_test_frame(50, 50)
+        img = renderer.render_test_frame(frame_idx, srt_frame_idx)
 
         membuf = BytesIO()
         img.save(membuf, format="png")

@@ -283,3 +283,4 @@ class Events:
     update: Callable = None
     render: Callable = None
     render_test_frame: Callable = None
+    render_last_frame: Callable = None
