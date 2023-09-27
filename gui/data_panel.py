@@ -44,7 +44,7 @@ class DataPanel(ft.Column):
             ft.Container(margin=0, padding=2, alignment=ft.alignment.top_left, content=self.files_panel),
             ft.Container(margin=0, padding=0, alignment=ft.alignment.top_left, content=self.info_panel),
             ft.Container(margin=0, padding=0, alignment=ft.alignment.top_left, content=self.config_panel),
-            ft.Container(margin=0, padding=0, alignment=ft.alignment.top_left, content=ft.Row(
+            ft.Container(margin=0, padding=0, alignment=ft.alignment.top_left, content=ft.ResponsiveRow(
                 alignment=ft.MainAxisAlignment.CENTER,
                 controls=[
                     self.render_btn,

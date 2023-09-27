@@ -20,6 +20,9 @@ def main(page: ft.Page):
 
     page.title = "OSD Overlay"
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.vertical_alignment_alignment = ft.MainAxisAlignment.START
+    page.spacing = 5
+    page.padding = 5
     page.update()
 
     # create application instance
