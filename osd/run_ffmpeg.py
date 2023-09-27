@@ -1,6 +1,6 @@
 import pathlib
 import sys
-from subprocess import Popen
+from subprocess import Popen, PIPE
 
 import ffmpeg
 
@@ -42,6 +42,18 @@ def run_ffmpeg_stdin(cfg: Config, video_path: pathlib.Path, out_path: pathlib.Pa
     if cfg.hq:
         output_params.update(hq_output)
 
+    cmd = video.filter("scale", **out_size, force_original_aspect_ratio=1) \
+        .filter("pad", **out_size, x=-1, y=-1, color="black") \
+        .overlay(frame_overlay, x=0, y=0) \
+        .output(str(out_path), **output_params) \
+        .global_args('-loglevel', 'info' if cfg.ffmpeg_verbatim else 'error') \
+        .global_args('-stats') \
+        .global_args('-hide_banner') \
+        .overwrite_output() \
+        .compile()
+
+    return Popen(cmd, stdin=PIPE, stderr=PIPE, bufsize=0, text=False)    
+
     return video.filter("scale", **out_size, force_original_aspect_ratio=1) \
         .filter("pad", **out_size, x=-1, y=-1, color="black") \
         .overlay(frame_overlay, x=0, y=0) \
@@ -50,4 +62,4 @@ def run_ffmpeg_stdin(cfg: Config, video_path: pathlib.Path, out_path: pathlib.Pa
         .global_args('-stats') \
         .global_args('-hide_banner') \
         .overwrite_output() \
-        .run_async(pipe_stdin=True)
+        .run_async(pipe_stdin=True, pipe_stderr=True, pipe_stdout=False, bufsize=0)

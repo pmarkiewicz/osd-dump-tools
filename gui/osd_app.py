@@ -1,8 +1,11 @@
+from typing import Any, List, Optional
 import flet as ft
 from flet import AlertDialog
 import base64
 from io import BytesIO
 import time
+from threading import Thread
+import re
 
 from .preview_panel import PreviewPanel
 from .data_panel import DataPanel
@@ -12,6 +15,23 @@ from osd.config import Config
 from osd.render import get_renderer
 from osd.run_ffmpeg import run_ffmpeg_stdin
 from osd.utils.find_slot import find_slots
+
+
+def logger(process, page):
+    regex = re.compile(r'frame=\s*(\d+)')
+    s = ''
+    while process.poll() is None:
+        s += process.stderr.read(10).decode('ascii')
+        if s.find('\r') != -1:
+            str = s.split('\r')
+            m = regex.search(str[0])
+            if m:
+                frame = int(m.group(1))
+            page.pubsub.send_all_on_topic('render', (frame, str[0], ))
+            if len(str) > 1:
+                s = str[1]
+            else:
+                s = ''
 
 
 class OsdApp(ft.UserControl):
@@ -58,14 +78,16 @@ class OsdApp(ft.UserControl):
                 actions_alignment=ft.MainAxisAlignment.END
             )
 
-        self.render_dialog = AlertDialog(
-                modal=True,
-                title=ft.Text("Info"),
-                content=ft.Text("Render in progress"),
-                actions=[
-                ],
-                actions_alignment=ft.MainAxisAlignment.END
-            )
+        self.render_dialog = RenderDialog(page)
+        # AlertDialog(
+        #         modal=True,
+        #         title=ft.Text("Info"),
+        #         content=ft.Text("Render in progress"),
+        #         actions=[
+        #             ft.TextButton("Close", on_click=self.close_dlg),
+        #         ],
+        #         actions_alignment=ft.MainAxisAlignment.END
+        #     )
 
     def close_dlg(self, e):
         self.err_dialog.open = False
@@ -87,6 +109,7 @@ class OsdApp(ft.UserControl):
 
     def on_render(self):
         self.render_dialog.open = True
+        self.render_dialog.total_frames = self.osd_state.video_props.frame_count
         self.page.dialog = self.render_dialog
         self.page.update()
 
@@ -142,7 +165,12 @@ class OsdApp(ft.UserControl):
 
         process = run_ffmpeg_stdin(self.osd_state.cfg, self.osd_state.video_path, self.osd_state.out_path)
 
+        th = Thread(target=logger, args=(process, self.page, ))
+        th.start()
+        time.sleep(0)
+
         for img in renderer.render_single_frame_in_memory(frames_idx_render):
+            time.sleep(0)
             process.stdin.write(img)
 
         # Close the pipe to signal the end of input
@@ -170,3 +198,39 @@ class OsdApp(ft.UserControl):
 
     def update(self):
         return super().update()
+
+
+class RenderDialog(AlertDialog):
+    def __init__(self, page: ft.Page, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.total_frames = 0
+
+        page.pubsub.subscribe_topic("render", self.on_render_update)
+
+        self.modal = True
+        self.title = ft.Text("Render in progress")
+        self.actions_alignment = ft.MainAxisAlignment.END
+
+        self.actions = [
+            ft.TextButton("Abort", on_click=self.abort),
+        ]
+
+        self.progress = ft.ProgressBar(width=400, color="amber", bgcolor="#eeeeee", value=0.0)
+        self.console = ft.Text("....", color=ft.colors.WHITE, bgcolor=ft.colors.BLACK,)
+        self.content = ft.Column(alignment=ft.MainAxisAlignment.START,
+                                 controls=[
+                                    self.progress,
+                                    self.console,
+                                  ],
+        )
+
+    def on_render_update(self, topic: str, args):
+        frame, msg = args
+
+        self.console.value = msg
+        self.progress.value = frame / self.total_frames
+        self.update()
+
+    def abort(self, e: ft.ControlEvent):
+        print('abort')
