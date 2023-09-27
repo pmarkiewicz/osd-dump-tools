@@ -111,6 +111,7 @@ class OsdApp(ft.UserControl):
         self.render_dialog.open = True
         self.render_dialog.total_frames = self.osd_state.video_props.frame_count
         self.page.dialog = self.render_dialog
+        self.render_dialog.reset()
         self.page.update()
 
     def reset_preview(self):
@@ -165,13 +166,21 @@ class OsdApp(ft.UserControl):
 
         process = run_ffmpeg_stdin(self.osd_state.cfg, self.osd_state.video_path, self.osd_state.out_path)
 
+        self.render_dialog.process = process
+
         th = Thread(target=logger, args=(process, self.page, ))
         th.start()
         time.sleep(0)
 
         for img in renderer.render_single_frame_in_memory(frames_idx_render):
             time.sleep(0)
-            process.stdin.write(img)
+            try:
+                process.stdin.write(img)
+            except BrokenPipeError:
+                # process was terminated
+                break
+            except OSError:
+                break
 
         # Close the pipe to signal the end of input
         process.stdin.close()
@@ -205,6 +214,9 @@ class RenderDialog(AlertDialog):
         super().__init__(*args, **kwargs)
 
         self.total_frames = 0
+        self.process = None
+        self.window_width = 500
+        self.width = 500
 
         page.pubsub.subscribe_topic("render", self.on_render_update)
 
@@ -232,5 +244,11 @@ class RenderDialog(AlertDialog):
         self.progress.value = frame / self.total_frames
         self.update()
 
+    def reset(self):
+        self.console.value = '...'
+        self.progress.value = 0.0
+        #self.update()
+
     def abort(self, e: ft.ControlEvent):
-        print('abort')
+        if self.process:
+            self.process.terminate()
