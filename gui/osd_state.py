@@ -131,6 +131,7 @@ class OsdState:
     def read_osd_frames(self):
         if self.osd_type == OSD_TYPE_DJI:
             self.frames = read_dji_osd_frames(self._osd_path, False, self.cfg)
+            # TODO: check for errors
         else:
             self.frames = read_ws_osd_frames(self._osd_path, False, self.cfg)
 
