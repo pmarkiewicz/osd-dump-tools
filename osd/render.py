@@ -206,7 +206,7 @@ class BaseRenderer:
 
             img_with_srt = img_with_srt.resize(self.final_img_size, Image.Resampling.BILINEAR)
             membuf = BytesIO()
-            img_with_srt.save(membuf, format="png") 
+            img_with_srt.save(membuf, format="png", compress_level=1, compress_type=3)
             membuf.seek(0)
             img = membuf.read()
 
