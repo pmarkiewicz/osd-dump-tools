@@ -204,7 +204,7 @@ class BaseRenderer:
             else:
                 img_with_srt = base_osd_img
 
-            img_with_srt = img_with_srt.resize(self.final_img_size, Image.Resampling.LANCZOS)
+            img_with_srt = img_with_srt.resize(self.final_img_size, Image.Resampling.BILINEAR)
             membuf = BytesIO()
             img_with_srt.save(membuf, format="png") 
             membuf.seek(0)
