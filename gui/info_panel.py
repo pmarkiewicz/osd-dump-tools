@@ -1,6 +1,7 @@
 import flet as ft
 
 from .osd_state import OsdState, Events
+from osd.utils.codecs import find_codec
 
 
 class InfoPanel(ft.Column):
@@ -9,6 +10,7 @@ class InfoPanel(ft.Column):
         self.events = events
         self.page = page
 
+        self.codec_info = ft.Text('No codec information')
         self.video_info = ft.Text('No video information')
         self.osd_info = ft.Text('No osd information')
         self.srt_info = ft.Text('No srt information')
@@ -20,6 +22,10 @@ class InfoPanel(ft.Column):
         page.pubsub.subscribe_topic("srt loaded", self.on_srt_file_loaded)
         page.pubsub.subscribe_topic("font", self.on_font_loaded)
 
+        codec = find_codec()
+        if codec:
+            self.codec_info.value = f'Codec: {codec}'
+
         super().__init__(*args, **kwargs)
         self.spacing = 5
         self.alignment = ft.MainAxisAlignment.START
@@ -27,6 +33,7 @@ class InfoPanel(ft.Column):
         self.tight = True
 
         self.controls = [
+            self.codec_info,
             self.video_info,
             self.osd_info,
             self.srt_info,
