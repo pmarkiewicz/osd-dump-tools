@@ -8,7 +8,7 @@ from .config import Config
 from .utils.codecs import find_codec
 
 
-def run_ffmpeg_stdin(cfg: Config, video_path: pathlib.Path, out_path: pathlib.Path) -> Popen[bytes]:
+def run_ffmpeg_stdin(cfg: Config, video_path: pathlib.Path, out_path: pathlib.Path, console: bool = False) -> Popen[bytes]:
     codec = find_codec()
     if not codec:
         print('No ffmpeg codec found')
@@ -52,7 +52,10 @@ def run_ffmpeg_stdin(cfg: Config, video_path: pathlib.Path, out_path: pathlib.Pa
         .overwrite_output() \
         .compile()
 
-    return Popen(cmd, stdin=PIPE, stderr=PIPE, bufsize=0, text=False)    
+    if console:
+        return Popen(cmd, stdin=PIPE)
+    
+    return Popen(cmd, stdin=PIPE, stderr=PIPE, bufsize=0, text=False)
 
     return video.filter("scale", **out_size, force_original_aspect_ratio=1) \
         .filter("pad", **out_size, x=-1, y=-1, color="black") \

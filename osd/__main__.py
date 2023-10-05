@@ -41,7 +41,7 @@ def render_test_frame(frames: list[Frame], srt_frames: list[SrtFrame], font: Fon
     return
 
 
-def render_frames(frames: list[Frame], srt_frames: list[SrtFrame], font: Font, cfg: Config, osd_type: int, video_path: pathlib.Path, out_path: pathlib.Path) -> None:
+def render_frames(frames: list[Frame], srt_frames: list[SrtFrame], font: Font, cfg: Config, osd_type: int, video_path: pathlib.Path, out_path: pathlib.Path, console: bool = False) -> None:
     print(f"rendering {len(frames)} frames")
 
     cls = get_renderer(osd_type)
@@ -63,7 +63,7 @@ def render_frames(frames: list[Frame], srt_frames: list[SrtFrame], font: Font, c
     else:
         frames_idx_render = [(idx, None,) for frame in frames[:-1]]
         
-    process = run_ffmpeg_stdin(cfg, video_path, out_path)
+    process = run_ffmpeg_stdin(cfg, video_path, out_path, console)
     total_time = 0
     for img in renderer.render_single_frame_in_memory(frames_idx_render):
         ts = time.time_ns()
@@ -148,7 +148,12 @@ def main(args: Config):
         render_test_frame(frames, srt_frames, font, args, osd_type, video_path)
         return
 
-    render_frames(frames, srt_frames, font, args, osd_type, video_path, out_path)
+    render_time_start = time.time()
+    render_frames(frames, srt_frames, font, args, osd_type, video_path, out_path, True)
+    render_time = time.time() - render_time_start
+
+    if args.verbatim:
+        print(f'Render time {render_time}')
 
 
 if __name__ == "__main__":
