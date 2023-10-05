@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from cProfile import Profile
+from pstats import SortKey, Stats
+
 import pathlib
 import sys
 import time
@@ -167,5 +170,12 @@ if __name__ == "__main__":
     args.merge_cfg(parser.parse_args())
 
     args.calculate()
-
     main(args)
+    # with Profile() as profile:
+    #     main(args)
+    #     (
+    #         Stats(profile)
+    #         .strip_dirs()
+    #         .sort_stats(SortKey.TIME)
+    #         .print_stats()
+    #     )
