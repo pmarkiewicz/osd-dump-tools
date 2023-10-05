@@ -54,37 +54,47 @@ class BaseRenderer:
 
         self.final_img_size = (self.cfg.target_width, self.cfg.target_height)
 
-    def hide_items(self, img: Image) -> None:
+        self.base_img = Image.new(
+            "RGBA",
+            (
+                self.display_width  * self.tile_width,
+                self.display_height * self.tile_height,
+            ),
+        )
+
+        self.last_frame = Frame(0, 0, 0, [0] * (self.internal_height * self.internal_width))
+
+    def hide_items(self) -> None:
         if self._items_cache.gps_lat:
             for i in range(self.exclusions.GPS_LEN + 1):
                 x = (self._items_cache.gps_lat[0] + i) * self.tile_width
                 y = self._items_cache.gps_lat[1] * self.tile_height
-                img.paste(self.masking_tile, (x , y,), )
+                self.base_img.paste(self.masking_tile, (x , y,), )
 
         if self._items_cache.gps_lon:
             for i in range(self.exclusions.GPS_LEN + 1):
                 x = (self._items_cache.gps_lon[0] + i) * self.tile_width
                 y = self._items_cache.gps_lon[1] * self.tile_height
-                img.paste(self.masking_tile, (x , y,), )
+                self.base_img.paste(self.masking_tile, (x , y,), )
 
         if self._items_cache.alt:
             for i in range(self.exclusions.ALT_LEN + 1):
                 x = (self._items_cache.alt[0] - i) * self.tile_width
                 y = self._items_cache.alt[1] * self.tile_height
-                img.paste(self.masking_tile, (x , y,), )
+                self.base_img.paste(self.masking_tile, (x , y,), )
 
         if self._items_cache.dist:
             for i in range(self.exclusions.HOME_LEN + 1):
                 x = (self._items_cache.dist[0] + i) * self.tile_width
                 y = self._items_cache.dist[1] * self.tile_height
-                img.paste(self.masking_tile, (x , y,), )
+                self.base_img.paste(self.masking_tile, (x , y,), )
 
-    def draw_str(self, x: int, y: int, txt: str, img: Image.Image) -> None:
+    def draw_str(self, x: int, y: int, txt: str) -> None:
         tile_step = int(self.tile_width * self.cfg.srt_font_scale)
         for n, c in enumerate(txt):
             tile = self.font.get_small_font(ord(c))
             x_pos = x + n
-            img.paste(tile, (x_pos * tile_step, y * self.tile_height,), )
+            self.base_img.paste(tile, (x_pos * tile_step, y * self.tile_height,), )
 
     @staticmethod
     def fmt_float(txt: str) -> str:
@@ -100,7 +110,7 @@ class BaseRenderer:
 
         return ''.join(result)
 
-    def draw_srt(self, srt_frame: SrtFrame, img: Image.Image) -> Image.Image:
+    def draw_srt(self, srt_frame: SrtFrame) -> None:
         x, y = self.cfg.srt_start_location
         if y < 0:   # location from screen bottom
             y += self.display_height
@@ -114,26 +124,17 @@ class BaseRenderer:
             if not self.cfg.ardu and '.' in txt:
                 txt = self.fmt_float(txt)
 
-            self.draw_str(x, y, txt, img)
+            self.draw_str(x, y, txt)
             x += len(txt) + 1
-
-        return img
 
     def char_reader(frame: Frame, x: int, y: int) -> str:
         pass
 
     def draw_frame(self, frame: Frame) -> None:
-        img = Image.new(
-            "RGBA",
-            (
-                self.display_width  * self.tile_width,
-                self.display_height * self.tile_height,
-            ),
-        )
 
         if frame.size == 0:  # empty frame
-            self.draw_str(0, 0, 'NO OSD DATA', img)
-            return img
+            self.draw_str(0, 0, 'NO OSD DATA', self.base_img)
+            return self.base_img
 
         gps_lat: tuple[int, int] | None = None
         gps_lon: tuple[int, int] | None = None
@@ -142,7 +143,6 @@ class BaseRenderer:
         for y in range(self.internal_height):
             for x in range(self.internal_width):
                 char = self.char_reader(frame, x, y)
-                tile = self.font[char]
 
                 if self.cfg.hide_gps and char == self.exclusions.LAT_CHAR_CODE:
                     gps_lat = (x, y)
@@ -160,14 +160,16 @@ class BaseRenderer:
                     alt = (x, y)
                     self._items_cache.dist = (x, y)
 
-                img.paste(tile, (x * self.tile_width, y * self.tile_height,), )
+                if char != self.char_reader(self.last_frame, x, y):
+                    tile = self.font[char]
+                    self.base_img.paste(tile, (x * self.tile_width, y * self.tile_height,), )
 
         # hide gps/alt data
         # if any of items was present on frame we will use cache to be sure that all are deleted
         if gps_lat or gps_lon or alt:
-            self.hide_items(img)
+            self.hide_items()
 
-        return img
+        self.last_frame = frame
 
     def render_single_frame_in_memory(self, frames_idx_render) -> Image.Image:
         for idx in frames_idx_render:
@@ -177,10 +179,10 @@ class BaseRenderer:
         frame_ranges, srt = idx
         osd_frame = self.frames[frame_ranges]
         frame_file_id = osd_frame.idx
-        base_osd_img = self.draw_frame(frame=osd_frame)
+        self.draw_frame(frame=osd_frame)
 
         if self.cfg.overlay_img:
-            base_osd_img.paste(self.cfg.overlay_img, self.cfg.overlay_location)
+            self.base_img.paste(self.cfg.overlay_img, self.cfg.overlay_location)
 
         if len(srt) == 0:
             frame_ranges = [(frame_file_id, osd_frame.next_idx, None, )]
@@ -200,13 +202,11 @@ class BaseRenderer:
 
         for fr in frame_ranges:
             if fr[2]:
-                img_with_srt = self.draw_srt(fr[2], base_osd_img.copy())
-            else:
-                img_with_srt = base_osd_img
+                self.draw_srt(fr[2])
 
-            img_with_srt = img_with_srt.resize(self.final_img_size, Image.Resampling.BILINEAR)
+            final_img = self.base_img.copy().resize(self.final_img_size, Image.Resampling.BILINEAR)
             membuf = BytesIO()
-            img_with_srt.save(membuf, format="png", compress_level=1, compress_type=3)
+            final_img.save(membuf, format="png", compress_level=1, compress_type=3)
             membuf.seek(0)
             img = membuf.read()
 
@@ -215,28 +215,26 @@ class BaseRenderer:
             for _ in range(fr[0] + 1, fr[1]):
                 yield img
 
-        return
-
     def render_test_frame(self, frame_idx: int, srt_frame_idx: int | None) -> Image.Image:
         # srt_frame: SrtFrame, idx: list[tuple]
         frame = self.frames[frame_idx]
-        osd_img = self.draw_frame(frame=frame)
+        self.draw_frame(frame=frame)
         if self.cfg.overlay_img:
-            osd_img.paste(self.cfg.overlay_img, self.cfg.overlay_location)
+            self.base_img.paste(self.cfg.overlay_img, self.cfg.overlay_location)
 
         if srt_frame_idx and self.srt_frames:
             srt_frame = self.srt_frames[srt_frame_idx]
-            self.draw_srt(srt_frame, osd_img)
+            self.draw_srt(srt_frame)
 
-        osd_img = osd_img.resize(self.final_img_size, Image.Resampling.LANCZOS)
+        osd_img = self.base_img.resize(self.final_img_size, Image.Resampling.LANCZOS)
 
         return osd_img
 
 
 class DjiRenderer(BaseRenderer):
     def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame], reset_cache: bool = False) -> None:
-        super().__init__(font, cfg, osd_type, frames, srt_frames, reset_cache)
         self.internal_width, self.internal_height = INTERNAL_W_H_DJI
+        super().__init__(font, cfg, osd_type, frames, srt_frames, reset_cache)
 
     def char_reader(self, frame: Frame, x: int, y: int) -> str:
         return frame.data[y + x * self.internal_height]
@@ -244,8 +242,8 @@ class DjiRenderer(BaseRenderer):
 
 class WsRenderer(BaseRenderer):
     def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame], reset_cache: bool = False) -> None:
-        super().__init__(font, cfg, osd_type, frames, srt_frames, reset_cache)
         self.internal_width, self.internal_height = INTERNAL_W_H_WS
+        super().__init__(font, cfg, osd_type, frames, srt_frames, reset_cache)
 
     def char_reader(self, frame: Frame, x: int, y: int) -> str:
         return frame.data[x + y * self.internal_width]
