@@ -215,8 +215,6 @@ class BaseRenderer:
             for _ in range(fr[0] + 1, fr[1]):
                 yield img
 
-        return
-
     def render_test_frame(self, frame_idx: int, srt_frame_idx: int | None) -> Image.Image:
         # srt_frame: SrtFrame, idx: list[tuple]
         frame = self.frames[frame_idx]
