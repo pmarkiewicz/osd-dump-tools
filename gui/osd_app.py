@@ -21,7 +21,7 @@ def logger(process, page):
     regex = re.compile(r'frame=\s*(\d+)')
     s = ''
     while process.poll() is None:
-        s += process.stderr.read(10).decode('ascii')
+        s += process.stderr.read(20).decode('ascii')
         if s.find('\r') != -1:
             str = s.split('\r')
             m = regex.search(str[0])
@@ -79,15 +79,6 @@ class OsdApp(ft.UserControl):
             )
 
         self.render_dialog = RenderDialog(page)
-        # AlertDialog(
-        #         modal=True,
-        #         title=ft.Text("Info"),
-        #         content=ft.Text("Render in progress"),
-        #         actions=[
-        #             ft.TextButton("Close", on_click=self.close_dlg),
-        #         ],
-        #         actions_alignment=ft.MainAxisAlignment.END
-        #     )
 
     def close_dlg(self, e):
         self.err_dialog.open = False
@@ -215,8 +206,6 @@ class RenderDialog(AlertDialog):
 
         self.total_frames = 0
         self.process = None
-        self.window_width = 500
-        self.width = 500
 
         page.pubsub.subscribe_topic("render", self.on_render_update)
 
@@ -235,7 +224,7 @@ class RenderDialog(AlertDialog):
                                     self.progress,
                                     self.console,
                                   ],
-        )
+                                )
 
     def on_render_update(self, topic: str, args):
         frame, msg = args
@@ -247,7 +236,6 @@ class RenderDialog(AlertDialog):
     def reset(self):
         self.console.value = '...'
         self.progress.value = 0.0
-        #self.update()
 
     def abort(self, e: ft.ControlEvent):
         if self.process:

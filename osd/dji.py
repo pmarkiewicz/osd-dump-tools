@@ -76,8 +76,11 @@ def read_dji_osd_frames(osd_path: pathlib.Path, verbatim: bool, cfg: Config) -> 
 
             frame_data_struct = struct.Struct(f"<{frame_size}H")
             frame_data = dump_f.read(frame_data_struct.size)
-            frame_data = frame_data_struct.unpack(frame_data)
+            if len(frame_data) != frame_data_struct.size:
+                print(f'Corrupted data, not all frames read. Frame size: {frame_size}. Last frame read: {frames[-1].idx}')
+                break
 
+            frame_data = frame_data_struct.unpack(frame_data)
             if len(frames) > 0 and frames[-1].idx == frame_idx:
                 if verbatim:
                     print(f'Duplicate frame: {frame_idx}')
