@@ -133,7 +133,7 @@ class BaseRenderer:
     def draw_frame(self, frame: Frame) -> None:
 
         if frame.size == 0:  # empty frame
-            self.draw_str(0, 0, 'NO OSD DATA', self.base_img)
+            self.draw_str(0, 0, 'NO OSD DATA')
             return self.base_img
 
         gps_lat: tuple[int, int] | None = None
