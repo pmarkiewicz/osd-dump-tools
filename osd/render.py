@@ -209,6 +209,7 @@ class BaseRenderer:
             final_img.save(membuf, format="png", compress_level=0)
             membuf.seek(0)
             img = membuf.read()
+            membuf.close()
 
             yield img
 
