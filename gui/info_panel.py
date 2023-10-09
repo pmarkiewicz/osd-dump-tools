@@ -1,7 +1,8 @@
 import flet as ft
+from functools import partial
 
 from .osd_state import OsdState, Events
-from osd.utils.codecs import find_codec
+from osd.utils.codecs import find_codec, find_codec_bknd
 
 
 class InfoPanel(ft.Column):
@@ -21,10 +22,13 @@ class InfoPanel(ft.Column):
         page.pubsub.subscribe_topic("osd loaded", self.on_osd_file_loaded)
         page.pubsub.subscribe_topic("srt loaded", self.on_srt_file_loaded)
         page.pubsub.subscribe_topic("font", self.on_font_loaded)
+        page.pubsub.subscribe_topic("codec", self.on_codec)
 
-        codec = find_codec()
-        if codec:
-            self.codec_info.value = f'Codec: {codec}'
+        # codec = find_codec()
+        # if codec:
+        #     self.codec_info.value = f'Codec: {codec}'
+        codec_notification = partial(page.pubsub.send_all_on_topic, 'codec')
+        find_codec_bknd(codec_notification)
 
         super().__init__(*args, **kwargs)
         self.spacing = 5
@@ -67,3 +71,7 @@ class InfoPanel(ft.Column):
     def on_font_loaded(self, topic: str, msg: str):
         self.font_info.value = msg
         self.font_info.update()
+
+    def on_codec(self, topic: str, msg: str):
+        self.codec_info.value = msg
+        self.codec_info.update()

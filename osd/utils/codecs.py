@@ -1,3 +1,5 @@
+from threading import Thread
+import time
 import subprocess
 import platform
 from collections import namedtuple
@@ -16,7 +18,7 @@ def find_codec() -> str | None:
               CodecDef('h264_mf', ('windows')),
               CodecDef('h264_v4l2m2m', ('linux')), 
               CodecDef('libx264', ('darwin', 'windows', 'linux')),
-            ]
+             ]
 
     cmd_line = 'ffmpeg -y -hwaccel auto -f lavfi -i nullsrc -c:v {0} -frames:v 1 -f null -'
 
@@ -31,3 +33,14 @@ def find_codec() -> str | None:
             return codec
 
     return None
+
+
+def _find_codec_bkgnd(callback: callable):
+    codec = find_codec()
+    callback(codec)
+
+
+def find_codec_bknd(callback: callable) -> str | None:
+    th = Thread(target=_find_codec_bkgnd, args=(callback, ))
+    th.start()
+    time.sleep(0)

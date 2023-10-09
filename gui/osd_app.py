@@ -1,4 +1,3 @@
-from typing import Any, List, Optional
 import flet as ft
 from flet import AlertDialog
 import base64
