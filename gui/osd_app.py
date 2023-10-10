@@ -152,7 +152,7 @@ class OsdApp(ft.UserControl):
                 slot_frames = find_slots(srt_idxs, start_frame, next_frame)
                 frames_idx_render.append((idx, slot_frames,))
         else:
-            frames_idx_render = [(idx, None,) for frame in self.osd_state.frames[:-1]]
+            frames_idx_render = [(idx, None,) for idx, _ in enumerate(self.osd_state.frames[:-1])]
 
         process = run_ffmpeg_stdin(self.osd_state.cfg, self.osd_state.video_path, self.osd_state.out_path)
 
@@ -216,8 +216,8 @@ class RenderDialog(AlertDialog):
             ft.TextButton("Abort", on_click=self.abort),
         ]
 
-        self.progress = ft.ProgressBar(width=400, color="amber", bgcolor="#eeeeee", value=0.0)
-        self.console = ft.Text("....", color=ft.colors.WHITE, bgcolor=ft.colors.BLACK,)
+        self.progress = ft.ProgressBar(width=900, color="amber", bgcolor="#eeeeee", value=0.0)
+        self.console = ft.Text("....", color=ft.colors.WHITE, bgcolor=ft.colors.BLACK, width=900, size=12)
         self.content = ft.Column(alignment=ft.MainAxisAlignment.START,
                                  controls=[
                                     self.progress,
