@@ -216,8 +216,8 @@ class RenderDialog(AlertDialog):
             ft.TextButton("Abort", on_click=self.abort),
         ]
 
-        self.progress = ft.ProgressBar(width=400, color="amber", bgcolor="#eeeeee", value=0.0)
-        self.console = ft.Text("....", color=ft.colors.WHITE, bgcolor=ft.colors.BLACK,)
+        self.progress = ft.ProgressBar(width=900, color="amber", bgcolor="#eeeeee", value=0.0)
+        self.console = ft.Text("....", color=ft.colors.WHITE, bgcolor=ft.colors.BLACK, width=900, size=12)
         self.content = ft.Column(alignment=ft.MainAxisAlignment.START,
                                  controls=[
                                     self.progress,
