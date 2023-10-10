@@ -5,7 +5,7 @@ import platform
 from collections import namedtuple
 
 
-def find_codec() -> str | None:    
+def find_codec() -> str | None:
     # code borrowed from ws-osd
     #     
     CodecDef = namedtuple('CodecDev', 'codec os')

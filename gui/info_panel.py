@@ -2,7 +2,7 @@ import flet as ft
 from functools import partial
 
 from .osd_state import OsdState, Events
-from osd.utils.codecs import find_codec, find_codec_bknd
+from osd.utils.codecs import find_codec_bknd
 
 
 class InfoPanel(ft.Column):

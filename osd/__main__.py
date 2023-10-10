@@ -7,8 +7,6 @@ import pathlib
 import sys
 import time
 from configparser import ConfigParser
-from subprocess import Popen
-
 
 from .utils.osd_props import detect_system, decode_fw_str
 from .render import get_renderer
