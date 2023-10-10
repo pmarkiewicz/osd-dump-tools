@@ -10,6 +10,7 @@ from .config import Config
 INTERNAL_W_H_DJI = (60, 22)
 INTERNAL_W_H_WS = (53, 20)
 
+NO_OSD_DATA = 'NO OSD DATA'
 
 @dataclass(slots=True)
 class HiddenItemsCache():
@@ -133,12 +134,15 @@ class BaseRenderer:
     def draw_frame(self, frame: Frame) -> None:
 
         if frame.size == 0:  # empty frame
-            self.draw_str(0, 0, 'NO OSD DATA')
+            self.draw_str(0, 0, NO_OSD_DATA)
             return self.base_img
 
         gps_lat: tuple[int, int] | None = None
         gps_lon: tuple[int, int] | None = None
         alt: tuple[int, int] | None = None
+
+        # hide no osd data
+        self.draw_str(0, 0, ' ' * len(NO_OSD_DATA))
 
         for y in range(self.internal_height):
             for x in range(self.internal_width):
@@ -184,7 +188,7 @@ class BaseRenderer:
         if self.cfg.overlay_img:
             self.base_img.paste(self.cfg.overlay_img, self.cfg.overlay_location)
 
-        if len(srt) == 0:
+        if not srt or len(srt) == 0:
             frame_ranges = [(frame_file_id, osd_frame.next_idx, None, )]
         elif len(srt) == 1:
             frame_ranges = [(frame_file_id, osd_frame.next_idx, self.srt_frames[srt[0]], )]

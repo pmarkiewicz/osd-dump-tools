@@ -152,7 +152,7 @@ class OsdApp(ft.UserControl):
                 slot_frames = find_slots(srt_idxs, start_frame, next_frame)
                 frames_idx_render.append((idx, slot_frames,))
         else:
-            frames_idx_render = [(idx, None,) for frame in self.osd_state.frames[:-1]]
+            frames_idx_render = [(idx, None,) for idx, _ in enumerate(self.osd_state.frames[:-1])]
 
         process = run_ffmpeg_stdin(self.osd_state.cfg, self.osd_state.video_path, self.osd_state.out_path)
 
