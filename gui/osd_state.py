@@ -100,7 +100,7 @@ class OsdState:
 
     def update_osd_info(self):
         if not self._osd_path.exists():
-            self.page.pubsub.send_all_on_topic('osd loaded', 'not loaded')
+            self.page.pubsub.send_all_on_topic('osd loaded', 'OSD not loaded')
         else:
             self.detect_system()
             self.read_osd_frames()

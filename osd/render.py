@@ -21,7 +21,8 @@ class HiddenItemsCache():
 
 
 class BaseRenderer:
-    __slots__ = 'font', 'cfg', 'osd_type', 'frames', 'srt_frames', 'tile_width', 'tile_height', 'masking_tile', 'exclusions', 'display_width', 'display_height', 'final_img_size'
+    __slots__ = 'font', 'cfg', 'osd_type', 'frames', 'srt_frames', 'tile_width', 'tile_height', 'masking_tile', \
+                'exclusions', 'display_width', 'display_height', 'final_img_size', 'no_data'
 
     def __init__(self, font: Font, cfg: Config, osd_type: int, frames: list[Frame], srt_frames: list[SrtFrame], reset_cache: bool = False) -> None:
         if reset_cache:
@@ -32,6 +33,7 @@ class BaseRenderer:
         self.osd_type = osd_type
         self.frames = frames
         self.srt_frames = srt_frames
+        self.no_data = False
         self._items_cache = HiddenItemsCache()
 
         self.tile_width = HD_TILE_WIDTH
@@ -135,14 +137,17 @@ class BaseRenderer:
 
         if frame.size == 0:  # empty frame
             self.draw_str(0, 0, NO_OSD_DATA)
+            self.no_data = True
             return self.base_img
 
         gps_lat: tuple[int, int] | None = None
         gps_lon: tuple[int, int] | None = None
         alt: tuple[int, int] | None = None
 
-        # hide no osd data
-        self.draw_str(0, 0, ' ' * len(NO_OSD_DATA))
+        # hide no osd data, only first time
+        if self.no_data:
+            self.draw_str(0, 0, ' ' * len(NO_OSD_DATA))
+            self.no_data = False
 
         for y in range(self.internal_height):
             for x in range(self.internal_width):
