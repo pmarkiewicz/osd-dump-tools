@@ -25,9 +25,12 @@ def find_codec() -> str | None:
     os = platform.system().lower()
     for codec in (codec.codec for codec in codecs if os in codec.os):
         cmd = (cmd_line.format(codec)).split(" ")
-        ret = subprocess.run(cmd, 
-                             stdout=subprocess.DEVNULL,
-                             stderr=subprocess.DEVNULL)
+        try:
+            ret = subprocess.run(cmd, 
+                                stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL)
+        except OSError:
+            return 'ffmpeg not found'
 
         if ret.returncode == 0:
             return codec

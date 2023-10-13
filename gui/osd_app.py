@@ -154,7 +154,12 @@ class OsdApp(ft.UserControl):
         else:
             frames_idx_render = [(idx, None,) for idx, _ in enumerate(self.osd_state.frames[:-1])]
 
-        process = run_ffmpeg_stdin(self.osd_state.cfg, self.osd_state.video_path, self.osd_state.out_path)
+        try:
+            process = run_ffmpeg_stdin(self.osd_state.cfg, self.osd_state.video_path, self.osd_state.out_path)
+        except OSError:
+            self.close_dlg(None)
+            self.on_error('Cannot start ffmpeg')
+            return
 
         self.render_dialog.process = process
 
