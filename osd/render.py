@@ -215,7 +215,7 @@ class BaseRenderer:
 
             final_img = self.base_img.copy().resize(self.final_img_size, Image.Resampling.BILINEAR)
             membuf = BytesIO()
-            final_img.save(membuf, format="png", compress_level=0)
+            final_img.save(membuf, format="png", compress_level=1)
             membuf.seek(0)
             img = membuf.read()
             membuf.close()
