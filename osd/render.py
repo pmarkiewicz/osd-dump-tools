@@ -50,7 +50,7 @@ class BaseRenderer:
 
         self.exclusions = InavParams
         if self.cfg.ardu:
-            self.exclusions = ArduParams
+            self.exclusions = ArduParams  # TODO: maybe this shout be in extenal class and use mix-in
 
         self.display_width = self.cfg.display_width
         self.display_height = self.cfg.display_height
