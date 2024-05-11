@@ -80,16 +80,17 @@ class BaseRenderer:
                 y = self._items_cache.gps_lon[1] * self.tile_height
                 self.base_img.paste(self.masking_tile, (x , y,), )
 
-        if self._items_cache.alt:
-            for i in range(self.exclusions.ALT_LEN + 1):
-                x = (self._items_cache.alt[0] - i) * self.tile_width
-                y = self._items_cache.alt[1] * self.tile_height
-                self.base_img.paste(self.masking_tile, (x , y,), )
-
         if self._items_cache.dist:
             for i in range(self.exclusions.HOME_LEN + 1):
                 x = (self._items_cache.dist[0] + i) * self.tile_width
                 y = self._items_cache.dist[1] * self.tile_height
+                self.base_img.paste(self.masking_tile, (x , y,), )
+
+    def hide_alt(self) -> None:
+        if self._items_cache.alt:
+            for i in range(self.exclusions.ALT_LEN + 1):
+                x = (self._items_cache.alt[0] - i) * self.tile_width
+                y = self._items_cache.alt[1] * self.tile_height
                 self.base_img.paste(self.masking_tile, (x , y,), )
 
     def draw_str(self, x: int, y: int, txt: str) -> None:
@@ -118,6 +119,8 @@ class BaseRenderer:
         if y < 0:   # location from screen bottom
             y += self.display_height
 
+        self.draw_str(x, y, ' ' * 22)
+
         for srt_item in self.cfg.srt_data:
             fmt_str = f'{srt_item.upper()}:{{}}'
             if srt_item in self.cfg.srt_fmt:
@@ -133,6 +136,18 @@ class BaseRenderer:
     def char_reader(frame: Frame, x: int, y: int) -> str:
         pass
 
+    def get_float_from_osd(self, frame: Frame, x: int, y: int) -> int:
+        ch = self.char_reader(frame, x, y)
+        buf = []
+        while ch != 0x20 and x >= 0:
+            buf.append(chr(ch))
+            x -= 1
+            ch = self.char_reader(frame, x, y)
+
+        buf.reverse()
+        result = int(''.join(buf))
+        return result
+
     def draw_frame(self, frame: Frame) -> None:
 
         if frame.size == 0:  # empty frame
@@ -142,7 +157,7 @@ class BaseRenderer:
 
         gps_lat: tuple[int, int] | None = None
         gps_lon: tuple[int, int] | None = None
-        alt: tuple[int, int] | None = None
+        hide_alt = False
 
         # hide no osd data, only first time
         if self.no_data:
@@ -162,11 +177,12 @@ class BaseRenderer:
                     self._items_cache.gps_lon = (x, y)
 
                 if self.cfg.hide_alt and char == self.exclusions.ALT_CHAR_CODE:
-                    alt = (x, y)
+                    flight_alt = self.get_float_from_osd(frame, x - 1, y)
+                    hide_alt = flight_alt > self.cfg.max_alt
                     self._items_cache.alt = (x, y)
 
                 if self.cfg.hide_dist and char == self.exclusions.HOME_CHAR_CODE:
-                    alt = (x, y)
+                    dist = (x, y)
                     self._items_cache.dist = (x, y)
 
                 if char != self.char_reader(self.last_frame, x, y):
@@ -175,8 +191,11 @@ class BaseRenderer:
 
         # hide gps/alt data
         # if any of items was present on frame we will use cache to be sure that all are deleted
-        if gps_lat or gps_lon or alt:
+        if gps_lat or gps_lon or dist:
             self.hide_items()
+
+        if hide_alt:
+            self.hide_alt()
 
         self.last_frame = frame
 
@@ -227,6 +246,8 @@ class BaseRenderer:
 
     def render_test_frame(self, frame_idx: int, srt_frame_idx: int | None) -> Image.Image:
         # srt_frame: SrtFrame, idx: list[tuple]
+        if frame_idx > len(self.frames):
+            frame_idx = int(len(self.frames) / 2)
         frame = self.frames[frame_idx]
         self.draw_frame(frame=frame)
         if self.cfg.overlay_img:

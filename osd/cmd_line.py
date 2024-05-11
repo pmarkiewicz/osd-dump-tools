@@ -12,6 +12,9 @@ def build_cmd_line_parser() -> argparse.ArgumentParser:
         "--bitrate", type=int, default=None, help='output bitrate'
     )
     parser.add_argument(
+        "--max_alt", type=int, default=None, help='max displayed altitude if --hide_alt is enbled, default 0'
+    )
+    parser.add_argument(
         "--out_resolution", type=str, default=None, choices=['hd', 'fhd', '2k'], help="output resolution hd is 720 lines, fhd is 1080, 2k is 1440, default is fhd"
     )
 

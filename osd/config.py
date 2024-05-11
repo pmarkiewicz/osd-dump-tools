@@ -12,7 +12,7 @@ from .ws_file_header import WSFileHeader
 
 class Config:
     params: tuple[tuple[str, type]] = (
-        ('font', str), ('bitrate', int), ('ffmpeg_verbatim', bool),
+        ('font', str), ('bitrate', int), ('max_alt', int), ('ffmpeg_verbatim', bool),
         ('testrun', bool), ('testframe', int), ('hq', bool),
         ('hide_gps', bool), ('hide_alt', bool), ('hide_dist', bool), ('verbatim', bool),
         ('overlay', str), ('out_resolution', str), 
@@ -25,6 +25,7 @@ class Config:
 
         self.font : str = ''
         self.bitrate: int = 25
+        self.max_alt: int = 0
         self.out_resolution: str = 'hd'
         self.narrow: bool = False
         self.hq: bool = False

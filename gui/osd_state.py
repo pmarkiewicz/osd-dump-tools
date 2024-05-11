@@ -239,6 +239,15 @@ class OsdState:
         self.update_ini()
 
     @property
+    def max_alt(self) -> int:
+        return self.cfg.max_alt
+
+    @max_alt.setter
+    def max_alt(self, value: int):
+        self.cfg.max_alt = value
+        self.update_ini()
+
+    @property
     def hq(self) -> bool:
         return self.cfg.hq
 
@@ -248,7 +257,7 @@ class OsdState:
         self.update_ini()
 
     @property
-    def bitrate(self) -> bool:
+    def bitrate(self) -> int:
         return self.cfg.bitrate
 
     @bitrate.setter
