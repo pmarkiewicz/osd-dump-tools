@@ -18,6 +18,7 @@ class Config:
         ('overlay', str), ('out_resolution', str), 
         ('srt', str), ('srt_start', str), ('srt_font_scale', float), 
         ('last_render_time', tuple[int, int]),
+        ('use_h265', bool),
     )
 
     def __init__(self, cfg: ConfigParser):
@@ -42,6 +43,7 @@ class Config:
         self.overlay = None
         self.srt_start = None
         self.last_render_time: tuple[int, int] = None
+        self.use_h265 = False
 
         self.hd: bool = True
         self.display_width: int = -1

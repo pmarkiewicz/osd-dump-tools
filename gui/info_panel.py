@@ -10,6 +10,7 @@ class InfoPanel(ft.Column):
         self.osd_state = osd_state
         self.events = events
         self.page = page
+        self.app = page
 
         self.codec_info = ft.Text('No codec information')
         self.video_info = ft.Text('No video information')
@@ -23,12 +24,8 @@ class InfoPanel(ft.Column):
         page.pubsub.subscribe_topic("srt loaded", self.on_srt_file_loaded)
         page.pubsub.subscribe_topic("font", self.on_font_loaded)
         page.pubsub.subscribe_topic("codec", self.on_codec)
-
-        # codec = find_codec()
-        # if codec:
-        #     self.codec_info.value = f'Codec: {codec}'
-        codec_notification = partial(page.pubsub.send_all_on_topic, 'codec')
-        find_codec_bknd(codec_notification)
+        page.pubsub.subscribe_topic("use_265_changed", self.on_use_265_changed)
+        page.pubsub.send_all_on_topic('use_265_changed', None)
 
         super().__init__(*args, **kwargs)
         self.spacing = 5
@@ -44,6 +41,10 @@ class InfoPanel(ft.Column):
             self.font_info,
             self.render_info,
         ]
+
+    def on_use_265_changed(self, topic: str, _: str):
+        codec_notification = partial(self.app.pubsub.send_all_on_topic, 'codec')
+        find_codec_bknd(codec_notification, self.osd_state.cfg.use_h265)
 
     # TODO: refactor nested if
     def on_video_file_loaded(self, topic: str, msg: str):

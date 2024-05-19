@@ -37,7 +37,7 @@ class BaseRenderer:
         self._items_cache = HiddenItemsCache()
 
         self.tile_width = HD_TILE_WIDTH
-        self.tile_height = HD_TILE_HEIGHT 
+        self.tile_height = HD_TILE_HEIGHT
         if not self.cfg.hd:
             self.tile_width = SD_TILE_WIDTH
             self.tile_height = SD_TILE_HEIGHT

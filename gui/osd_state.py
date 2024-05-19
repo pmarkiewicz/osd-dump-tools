@@ -248,6 +248,17 @@ class OsdState:
         self.update_ini()
 
     @property
+    def use_h265(self) -> bool:
+        return self.cfg.use_h265
+
+    @use_h265.setter
+    def use_h265(self, value: bool):
+        self.cfg.use_h265 = value
+        self.update_ini()
+        self.page.pubsub.send_all_on_topic('use_265_changed', value)
+
+
+    @property
     def hq(self) -> bool:
         return self.cfg.hq
 
@@ -291,6 +302,8 @@ class OsdState:
             'srt': ':'.join(self.srt_data),
             'srt_start': self.srt_start_location,
             'out_resolution': self.output_resolution,
+            'max_alt': self.max_alt,
+            'use_h265': self.use_h265,
         }
         if self.cfg.last_render_time:
             config['last_render_time'] = self.cfg.last_render_time

@@ -1,5 +1,6 @@
 import struct
 import pathlib
+import sys
 
 from ..const import OSD_TYPE_DJI, OSD_TYPE_WS, FW_ARDU, FW_INAV, FW_BETAFL
 from ..dji import read_dji_osd_header
@@ -23,7 +24,7 @@ def detect_system(osd_path: pathlib.Path, verbatim: bool = False) -> tuple :
             return OSD_TYPE_DJI, FW_INAV
         if dji_file_header.font_variant == 3:   # TODO: change to const, what about BF?
             return OSD_TYPE_DJI, FW_ARDU
-    
+
     if file_header[0] == b'INAV':
         return OSD_TYPE_WS, FW_INAV
     if file_header[0] == b'BTFL':
@@ -38,15 +39,15 @@ def detect_system(osd_path: pathlib.Path, verbatim: bool = False) -> tuple :
 def decode_fw_str(firmware: int) -> str:
     if firmware == FW_BETAFL:
         return 'bf'
-    
+
     if firmware == FW_ARDU:
         return 'ardu'
-    
+
     return 'inav'
 
 
 def decode_system_str(system: int) -> str:
     if system == OSD_TYPE_DJI:
         return 'DJI'
-    
+
     return 'WS'

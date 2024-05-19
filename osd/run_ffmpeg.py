@@ -9,7 +9,12 @@ from .utils.codecs import find_codec
 
 
 def run_ffmpeg_stdin(cfg: Config, video_path: pathlib.Path, out_path: pathlib.Path, console: bool = False) -> Popen[bytes]:
-    codec = find_codec()
+    try:
+        codec = find_codec(cfg.use_h265)
+    except OSError:
+        print("ffmpeg not found")
+        sys.exit(4)
+
     if not codec:
         print('No ffmpeg codec found')
         sys.exit(2)

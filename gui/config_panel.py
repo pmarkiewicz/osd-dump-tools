@@ -26,6 +26,12 @@ class ConfigPanel(ft.Column):
             on_change=self.update_hq_profile,
         )
 
+        self.use_h265 = ft.Checkbox(
+            label="Use h265 (hevc) codec if possible",
+            value=osd_state.use_h265,
+            on_change=self.update_use_h265,
+        )
+
         self.hide_gps = ft.Checkbox(
             label="GPS", value=osd_state.hide_gps, on_change=self.update_hide_gps
         )
@@ -130,6 +136,7 @@ class ConfigPanel(ft.Column):
                 ],
             ),
             self.hq_profile,
+            self.use_h265,
             ft.Row(
                 spacing=10,
                 controls=[
@@ -214,3 +221,6 @@ class ConfigPanel(ft.Column):
 
     def update_hq_profile(self, e: ft.ControlEvent) -> None:
         self.osd_state.hq = e.data == "true"
+
+    def update_use_h265(self, e: ft.ControlEvent) -> None:
+        self.osd_state.use_h265 = e.data == "true"
