@@ -139,7 +139,7 @@ class BaseRenderer:
     def get_float_from_osd(self, frame: Frame, x: int, y: int) -> int:
         ch = self.char_reader(frame, x, y)
         buf = []
-        while ch != 0x20 and x >= 0:
+        while ch != 0x20 and ch != 0x00 and x >= 0:
             buf.append(chr(ch))
             x -= 1
             ch = self.char_reader(frame, x, y)
