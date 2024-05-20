@@ -25,7 +25,7 @@ def detect_system(osd_path: pathlib.Path, verbatim: bool = False) -> tuple :
         if dji_file_header.font_variant == 3:   # TODO: change to const, what about BF?
             return OSD_TYPE_DJI, FW_ARDU
 
-    if file_header[0] == b'INAV':
+    if file_header[0] == b'INAV' or file_header[0] == b'IN_E':
         return OSD_TYPE_WS, FW_INAV
     if file_header[0] == b'BTFL':
         return OSD_TYPE_WS, FW_BETAFL
