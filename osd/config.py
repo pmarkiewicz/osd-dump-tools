@@ -190,7 +190,7 @@ class Config:
         self.display_width = ws_file_header.char_width
         self.display_height = ws_file_header.char_height
 
-        if ws_file_header.system == 'ARDU':
+        if ws_file_header.system in ('ARDU', 'APC_',):
             self.ardu = True
 
     def update_narrow(self, width: int, height: int) -> None:

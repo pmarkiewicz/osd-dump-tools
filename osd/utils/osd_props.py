@@ -29,7 +29,7 @@ def detect_system(osd_path: pathlib.Path, verbatim: bool = False) -> tuple :
         return OSD_TYPE_WS, FW_INAV
     if file_header[0] == b'BTFL':
         return OSD_TYPE_WS, FW_BETAFL
-    if file_header[0] == b'ARDU':
+    if file_header[0] == b'ARDU' or file_header[0] == b'APC_':
         return OSD_TYPE_WS, FW_ARDU
 
     print(f"{osd_path} has an invalid file header")

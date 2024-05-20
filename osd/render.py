@@ -158,6 +158,7 @@ class BaseRenderer:
         gps_lat: tuple[int, int] | None = None
         gps_lon: tuple[int, int] | None = None
         hide_alt = False
+        dist: tuple[int, int] | None = None
 
         # hide no osd data, only first time
         if self.no_data:
