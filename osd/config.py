@@ -190,6 +190,7 @@ class Config:
         self.display_width = ws_file_header.char_width
         self.display_height = ws_file_header.char_height
 
+        # TODO: this should be read from detection not checked here
         if ws_file_header.system in ('ARDU', 'APC_',):
             self.ardu = True
 
