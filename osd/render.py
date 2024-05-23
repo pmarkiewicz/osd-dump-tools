@@ -148,12 +148,28 @@ class BaseRenderer:
         result = int(''.join(buf))
         return result
 
-    def draw_frame(self, frame: Frame) -> None:
+    def get_str_from_osd(self, frame: Frame, x: int, y: int, length: int) -> str:
+        buf = []
+        for col in range(x, x+length):
+            ch = self.char_reader(frame, col, y)
+            buf.append(chr(ch))
+
+        return ''.join(buf)
+    
+    def draw_frame(self, frame: Frame, test_render: bool = False) -> None:
 
         if frame.size == 0:  # empty frame
             self.draw_str(0, 0, NO_OSD_DATA)
             self.no_data = True
             return self.base_img
+        
+        c1 = self.char_reader(frame, 15, 1)
+        c2 = self.char_reader(frame, 15, 2)
+        if not test_render and self.cfg.hide_stats and chr(c1) == 'S' or chr(c2) == 'S':
+            y = 1 if chr(c1) == 'S' else 2
+            stats = self.get_str_from_osd(frame, 15, y, 5)
+            if stats == 'STATS':
+                return
 
         gps_lat: tuple[int, int] | None = None
         gps_lon: tuple[int, int] | None = None
@@ -236,8 +252,9 @@ class BaseRenderer:
             final_img = self.base_img.copy().resize(self.final_img_size, Image.Resampling.BILINEAR)
             membuf = BytesIO()
             final_img.save(membuf, format="png", compress_level=1)
-            membuf.seek(0)
-            img = membuf.read()
+            # membuf.seek(0)
+            # img = membuf.read()
+            img = membuf.getvalue()
             membuf.close()
 
             yield img
@@ -250,7 +267,7 @@ class BaseRenderer:
         if frame_idx > len(self.frames):
             frame_idx = int(len(self.frames) / 2)
         frame = self.frames[frame_idx]
-        self.draw_frame(frame=frame)
+        self.draw_frame(frame=frame, test_render=True)
         if self.cfg.overlay_img:
             self.base_img.paste(self.cfg.overlay_img, self.cfg.overlay_location)
 

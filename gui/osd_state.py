@@ -248,6 +248,15 @@ class OsdState:
         self.update_ini()
 
     @property
+    def hide_stats(self) -> bool:
+        return self.cfg.hide_stats
+
+    @hide_stats.setter
+    def hide_stats(self, value: bool):
+        self.cfg.hide_stats = value
+        self.update_ini()
+
+    @property
     def use_h265(self) -> bool:
         return self.cfg.use_h265
 
@@ -304,6 +313,7 @@ class OsdState:
             'out_resolution': self.output_resolution,
             'max_alt': self.max_alt,
             'use_h265': self.use_h265,
+            'hide_stats': self.hide_stats,
         }
         if self.cfg.last_render_time:
             config['last_render_time'] = self.cfg.last_render_time

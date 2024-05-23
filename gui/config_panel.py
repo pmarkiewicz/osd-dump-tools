@@ -32,6 +32,12 @@ class ConfigPanel(ft.Column):
             on_change=self.update_use_h265,
         )
 
+        self.hide_stats = ft.Checkbox(
+            label="Hide stats",
+            value=osd_state.hide_stats,
+            on_change=self.update_hide_stats,
+        )
+
         self.hide_gps = ft.Checkbox(
             label="GPS", value=osd_state.hide_gps, on_change=self.update_hide_gps
         )
@@ -137,6 +143,7 @@ class ConfigPanel(ft.Column):
             ),
             self.hq_profile,
             self.use_h265,
+            self.hide_stats,
             ft.Row(
                 spacing=10,
                 controls=[
@@ -224,3 +231,6 @@ class ConfigPanel(ft.Column):
 
     def update_use_h265(self, e: ft.ControlEvent) -> None:
         self.osd_state.use_h265 = e.data == "true"
+
+    def update_hide_stats(self, e: ft.ControlEvent) -> None:
+        self.osd_state.hide_stats = e.data == "true"
