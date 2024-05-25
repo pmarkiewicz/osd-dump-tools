@@ -30,6 +30,7 @@ def main(page: ft.Page):
 
     # add application's root control to the page
     page.add(osd_app)
+    args.page = page
 
 
 if __name__ == "__main__":

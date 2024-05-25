@@ -118,7 +118,7 @@ class OsdState:
         self.update_ready()
 
     def detect_system(self):
-        self.osd_type, firmware = detect_system(self._osd_path)
+        self.osd_type, firmware = detect_system(self._osd_path, self.cfg.page)
         self.fw_name = decode_fw_str(firmware)
         self.osd_name = decode_system_str(self.osd_type)
 

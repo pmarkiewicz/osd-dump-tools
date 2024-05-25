@@ -78,6 +78,10 @@ class OsdApp(ft.UserControl):
             )
 
         self.render_dialog = RenderDialog(page)
+        page.pubsub.subscribe_topic("error", self.on_error_msg)
+
+    def on_error_msg(self, topic: str, msg: str):
+        self.on_error(msg)
 
     def close_dlg(self, e):
         self.err_dialog.open = False

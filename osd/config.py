@@ -5,6 +5,7 @@ import pathlib
 import sys
 from configparser import ConfigParser
 from PIL import Image, UnidentifiedImageError
+import flet as ft
 from .const import DEFAULT_SECTION, FW_ARDU, HD_TILE_WIDTH
 from .dji_file_header import DJIFileHeader
 from .ws_file_header import WSFileHeader
@@ -24,6 +25,7 @@ class Config:
     def __init__(self, cfg: ConfigParser):
         super().__init__()
 
+        self.page: ft.Page = None
         self.font : str = ''
         self.bitrate: int = 25
         self.max_alt: int = 0
