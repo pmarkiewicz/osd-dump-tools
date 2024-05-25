@@ -140,7 +140,7 @@ class BaseRenderer:
 
     def hide_alt(self, frame: Frame) -> None:
         if self._items_cache.alt:
-            self.char_writer(frame, self._items_cache.alt[0], self._items_cache.alt[1], ' ')
+            # self.char_writer(frame, self._items_cache.alt[0], self._items_cache.alt[1], ' ')
             for i in range(self.exclusions.ALT_LEN + 1):
                 x = (self._items_cache.alt[0] - i) * self.tile_width
                 y = self._items_cache.alt[1] * self.tile_height
