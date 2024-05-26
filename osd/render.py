@@ -140,7 +140,7 @@ class BaseRenderer:
 
     def hide_alt(self, frame: Frame) -> None:
         if self._items_cache.alt:
-            # self.char_writer(frame, self._items_cache.alt[0], self._items_cache.alt[1], ' ')
+            self.char_writer(frame, self._items_cache.alt[0], self._items_cache.alt[1], ord('X'))
             for i in range(self.exclusions.ALT_LEN + 1):
                 x = (self._items_cache.alt[0] - i) * self.tile_width
                 y = self._items_cache.alt[1] * self.tile_height
@@ -195,7 +195,7 @@ class BaseRenderer:
     def char_reader(frame: Frame, x: int, y: int) -> str:
         pass
 
-    def char_writer(self, frame, x, y, c: str) -> None:
+    def char_writer(self, frame, x, y, c: int) -> None:
         pass
 
     def get_float_from_osd(self, frame: Frame, x: int, y: int) -> int:
@@ -265,13 +265,7 @@ class BaseRenderer:
 
                 if char != self.char_reader(self.last_frame, x, y):
                     tile = self.font[char]
-                    self.base_img.paste(
-                        tile,
-                        (
-                            x * self.tile_width,
-                            y * self.tile_height,
-                        ),
-                    )
+                    self.base_img.paste(tile, (x * self.tile_width, y * self.tile_height,))
 
         # hide gps/alt data
         # if any of items was present on frame we will use cache to be sure that all are deleted
@@ -397,8 +391,8 @@ class DjiRenderer(BaseRenderer):
     def char_reader(self, frame: Frame, x: int, y: int) -> str:
         return frame.data[y + x * self.internal_height]
 
-    def char_writer(self, frame: Frame, x, y, c: str) -> None:
-        frame.data[y + x * self.internal_height] = 32
+    def char_writer(self, frame: Frame, x, y, c: int) -> None:
+        frame.data[y + x * self.internal_height] = c
 
 
 class WsRenderer(BaseRenderer):
@@ -417,8 +411,8 @@ class WsRenderer(BaseRenderer):
     def char_reader(self, frame: Frame, x: int, y: int) -> str:
         return frame.data[x + y * self.internal_width]
 
-    def char_writer(self, frame, x, y, c: str) -> None:
-        frame.data[x + y * self.internal_width] = c[0]
+    def char_writer(self, frame, x, y, c: int) -> None:
+        frame.data[x + y * self.internal_width] = c
 
 
 def get_renderer(osd_type: int):

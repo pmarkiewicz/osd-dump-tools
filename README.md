@@ -1,8 +1,22 @@
+# Intro
+osd-tool let you create overlay on video recorded from dji wtfos or walksnail avatar.
+Let's you control visibility of distance, gps location and altitude (you can let limit), can also hide stats at end of flight.
+Can display additional information like signal, channel, bitrate and delay.
+Works with ardupilot, iNav and betaflight.
+Works on windows, macos and linux
+
+There is also command line if you need to batch convert.
+
+# How to run
+Make sure that you have ffmpeg installed
+and simply use on windows
+```
+run.cmd 
+```
 # gui added
 
 After installation as described below just use run.cmd on windows to start program.
 GUI is simple, not very well tested now and requires improvement.
-Progress of video rendering may not be visible (should be visible in terminal window)
 
 # osd-dump tools
 
@@ -77,10 +91,5 @@ $ python -m osd --help
 All parameters can be set in ini file located in osd folder. Parameters can be overriden by ini file in current directory.
 
 # Convert your recording!
-$ python -m osd --font font_inav --hd  DJIG0001.mp4
-
-  INFO:__main__:loading OSD dump from DJIG0001.osd
-  INFO:__main__:rendering 168 frames
-  INFO:__main__:passing to ffmpeg, out as DJIG0001_with_osd.mp4
-  ... etc ...
+Run run.cmd and all settings are in UI
 ```
