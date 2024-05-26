@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from array import array
 
 
 @dataclass(slots=True)
@@ -6,7 +7,7 @@ class Frame:
     idx: int
     next_idx: int
     size: int
-    data: bytes
+    data: array
 
 @dataclass(slots=True)
 class SrtFrame:
