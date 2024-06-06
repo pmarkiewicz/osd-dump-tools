@@ -1,5 +1,6 @@
 import struct
 import pathlib
+from array import array
 
 from .config import Config
 from .frame import Frame
@@ -49,10 +50,10 @@ def read_ws_osd_frames(osd_path: pathlib.Path, verbatim: bool, cfg: Config) -> l
             if len(frame_header) == 0:
                 break
 
-            frame = frame_header_struct_ws.unpack(frame_header)
-            osd_time = frame[0]
+            frame = array('H', frame_header)
+            osd_time = frame[0] + (frame[1] << 16)
             frame_idx = int(osd_time // frames_per_ms)
-            frame_data = frame[1:]
+            frame_data = frame[2:]
 
             if len(frames) > 0 and frames[-1].idx == frame_idx:
                 if verbatim:

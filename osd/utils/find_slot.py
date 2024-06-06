@@ -19,7 +19,7 @@ def find_slots(sequence: list[int], start: int, end: int) -> list[int]:
             # return [None] + sequence[n1:n2]
             return [None] + list(range(n1, n2))
     if n2 == 0:
-        print('Missing end sequence')
+        print('Missing end sequence, find slot')
         return []
 
     if n1 >= len(sequence):

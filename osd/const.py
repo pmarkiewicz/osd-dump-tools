@@ -33,6 +33,7 @@ class ArduParams:
     LAT_CHAR_CODE: int = 167
     LON_CHAR_CODE: int = 166
     ALT_CHAR_CODE: int = 177
+    ALT_CHAR_CODE2: int = -1
     HOME_CHAR_CODE: int = 191
 
     ALT_LEN: int = 4
@@ -45,6 +46,7 @@ class InavParams:
     LAT_CHAR_CODE: int = 3
     LON_CHAR_CODE: int = 4
     ALT_CHAR_CODE: int = 118
+    ALT_CHAR_CODE2: int = 119
     HOME_CHAR_CODE: int = 16
 
     ALT_LEN: int = 4

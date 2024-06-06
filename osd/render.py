@@ -140,7 +140,7 @@ class BaseRenderer:
 
     def hide_alt(self, frame: Frame) -> None:
         if self._items_cache.alt:
-            self.char_writer(frame, self._items_cache.alt[0], self._items_cache.alt[1], ord('X'))
+            #self.char_writer(frame, self._items_cache.alt[0], self._items_cache.alt[1], ord('X'))
             for i in range(self.exclusions.ALT_LEN + 1):
                 x = (self._items_cache.alt[0] - i) * self.tile_width
                 y = self._items_cache.alt[1] * self.tile_height
@@ -164,10 +164,10 @@ class BaseRenderer:
         n = txt.find(".")
         d1 = txt[n - 1 : n]
         d2 = txt[n + 1 : n + 2]
-        ch1 = ord(d1) - 0x30
+        ch1 = ord(d1) - 0x30    # convert to int 0-9
         ch2 = ord(d2) - 0x30
-        ch1 += 0xA1
-        ch2 += 0xB1
+        ch1 += 0xA1             # convert to ditigt dot
+        ch2 += 0xB1             # convert to dot digit
 
         result = [txt[: n - 1], chr(ch1), chr(ch2), txt[n + 2 :]]
 
@@ -198,16 +198,23 @@ class BaseRenderer:
     def char_writer(self, frame, x, y, c: int) -> None:
         pass
 
-    def get_float_from_osd(self, frame: Frame, x: int, y: int) -> int:
+    def get_float_from_osd(self, frame: Frame, x: int, y: int, mult) -> int:
         ch = self.char_reader(frame, x, y)
         buf = []
         while ch != 0x20 and ch != 0x00 and x >= 0:
+
+            if 0xA1 <= ch <= 0xAA:
+                ch -= 0xA1 - 0x30
+                buf.append('.')
+            if 0xB1 <= ch <= 0xBA:
+                ch -= 0xB1 - 0x30
             buf.append(chr(ch))
             x -= 1
             ch = self.char_reader(frame, x, y)
 
         buf.reverse()
-        result = int("".join(buf))
+        result = float("".join(buf)) * mult
+
         return result
 
     def get_str_from_osd(self, frame: Frame, x: int, y: int, length: int) -> str:
@@ -254,8 +261,9 @@ class BaseRenderer:
                     gps_lon = (x, y)
                     self._items_cache.gps_lon = (x, y)
 
-                if self.cfg.hide_alt and char == self.exclusions.ALT_CHAR_CODE:
-                    flight_alt = self.get_float_from_osd(frame, x - 1, y)
+                if self.cfg.hide_alt and char in (self.exclusions.ALT_CHAR_CODE, self.exclusions.ALT_CHAR_CODE2):
+                    mult: int = 1000 if char == self.exclusions.ALT_CHAR_CODE2 else 1
+                    flight_alt = self.get_float_from_osd(frame, x - 1, y, mult)
                     hide_alt = flight_alt > self.cfg.max_alt
                     self._items_cache.alt = (x, y)
 
